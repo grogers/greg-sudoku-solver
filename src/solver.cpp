@@ -86,6 +86,29 @@ void ParseOptions(const list<string> &opts)
             }
         } else if (*i == "--bifurcate" || *i == "-b") {
             bifurcate = true;
+        } else if (*i == "--log-level" || *i == "-l") {
+            ++i;
+            if (i == opts.end()) {
+                Log(Fatal, "No argument given to option --log-level\n");
+                exit(1);
+            }
+
+            if (*i == "f" || *i == "Fatal") {
+                SetLogLevel(Fatal);
+            } else if (*i == "e" || *i == "Error") {
+                SetLogLevel(Error);
+            } else if (*i == "w" || *i == "Warning") {
+                SetLogLevel(Warning);
+            } else if (*i == "i" || *i == "Info") {
+                SetLogLevel(Info);
+            } else if (*i == "d" || *i == "Debug") {
+                SetLogLevel(Debug);
+            } else if (*i == "t" || *i == "Trace") {
+                SetLogLevel(Trace);
+            } else {
+                Log(Fatal, "Invalid output format \'%s\' specified\n", i->c_str());
+                usage();
+            }
         } else if (*i == "--techniques" || *i == "-t") {
             ++i;
             if (i == opts.end()) {
@@ -117,10 +140,12 @@ void usage()
 {
     cout << "usage: solver [options]\n"
        "options:\n"
-       "    --help, -h                  Print this help message.\n"
+       "    --help, -h                  Print this help message.\n\n"
        "    --output-format, -o         Print sudoku's with the output format given.\n"
-       "        <value|cand|none>       The default is to print candidates.\n"
-       "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n"
+       "        <value|cand|none>       The default is to print candidates.\n\n"
+       "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n\n"
+       "    --log-level, -l             Set the logging level to one of:\n"
+       "        <f|e|w|i|d|t>           Fatal, Error, Warning, Info, Debug, Trace\n\n"
        "    --techniques, -t            Comma separated list of techniques to use, in\n"
        "        <techniques,...>        the order specified.\n"
        "                                NOTE: NakedSingle or HiddenSingle should be used\n"
