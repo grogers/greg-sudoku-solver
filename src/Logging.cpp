@@ -3,7 +3,7 @@
 #include <cstdarg>
 
 namespace {
-    LogLevel level = Fatal;
+    LogLevel level = Trace;
 }
 
 LogLevel GetLogLevel()
@@ -30,12 +30,44 @@ const char *GetLogLevelName(LogLevel level)
     }
 }
 
-int Log(const char *fmt, ...)
+int Log(LogLevel lvl, const char *fmt, ...)
 {
-    va_args va;
+    if (level < lvl)
+        return 0;
+
+    va_list va;
 
     va_start(va, fmt);
-    vprintf(fmt, va);
+    printf("%s: ", GetLogLevelName(lvl));
+    int ret = vprintf(fmt, va);
     va_end(va);
+
+    return ret;
 }
 
+int StarryLog(LogLevel lvl, unsigned numStarLines, const char *fmt, ...)
+{
+    if (level < lvl)
+        return 0;
+
+    va_list va;
+
+    for (unsigned i = 0; i < numStarLines; ++i) {
+        for (unsigned j = 0; j <= i; ++j)
+            printf("*");
+        printf("\n");
+    }
+
+    va_start(va, fmt);
+    printf("%s: ", GetLogLevelName(lvl));
+    int ret = vprintf(fmt, va);
+    va_end(va);
+
+    for (unsigned i = numStarLines; i > 0; --i) {
+        for (unsigned j = i; j > 0; --j)
+            printf("*");
+        printf("\n");
+    }
+
+    return ret;
+}

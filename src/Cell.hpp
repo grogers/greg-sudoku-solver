@@ -8,6 +8,7 @@ class Cell
 {
     public:
         Cell();
+        Cell(Index_t);
         Cell(const Cell &);
         Cell &operator=(const Cell &);
 
@@ -15,7 +16,8 @@ class Cell
         void SetValue(Index_t);
         Index_t GetValue() const;
 
-        int NumCandidates() const;
+        bool IsCandidate(Index_t) const;
+        Index_t NumCandidates() const;
         bool ExcludeCandidate(Index_t);
 
     private:
@@ -29,6 +31,15 @@ class Cell
 inline Cell::Cell()
 {
     _candidates = 0x1ff;
+    _value = 0;
+}
+
+/**
+ * Constructs the cell with the given value.
+ */
+inline Cell::Cell(Index_t val)
+{
+    SetValue(val);
 }
 
 inline Cell::Cell(const Cell &x)
@@ -38,13 +49,14 @@ inline Cell::Cell(const Cell &x)
 
 inline Cell &Cell::operator=(const Cell &x)
 {
+    _value = x._value;
     _candidates = x._candidates;
     return *this;
 }
 
 inline bool Cell::HasValue() const
 {
-    return !_candidates;
+    return _value != 0;
 }
 
 inline void Cell::SetValue(Index_t val)
@@ -57,14 +69,14 @@ inline void Cell::SetValue(Index_t val)
 
 inline Index_t Cell::GetValue() const
 {
+    assert(_value != 0);
     return _value;
 }
 
-inline int Cell::NumCandidates() const
+inline Index_t Cell::NumCandidates() const
 {
-    int tmp = 0;
-    for (int i = 0; i < 9; ++i)
-    {
+    Index_t tmp = 0;
+    for (Index_t i = 0; i < 9; ++i) {
         if (_candidates & (1 << i))
             ++tmp;
     }
@@ -74,7 +86,6 @@ inline int Cell::NumCandidates() const
 inline bool Cell::IsCandidate(Index_t val) const
 {
     assert(val >= 1 && val <= 9);
-
     return _candidates & (1 << (val - 1));
 }
 
@@ -90,18 +101,7 @@ inline bool Cell::ExcludeCandidate(Index_t val)
         return false;
 
     _candidates &= ~(1 << (val - 1));
-
-    if (NumCandidates() == 1)
-    {
-        for (int i = 0; ; ++i)
-        {
-            if (_candidates & (1 << i))
-            {
-                SetValue(i + 1);
-                break;
-            }
-        }
-    }
+    return true;
 }
 
 

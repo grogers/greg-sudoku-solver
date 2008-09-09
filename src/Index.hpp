@@ -1,6 +1,6 @@
 #ifndef INDEX_HPP
 #define INDEX_HPP
 
-typedef unsigned Index_t;
+typedef unsigned short Index_t;
 
 #endif

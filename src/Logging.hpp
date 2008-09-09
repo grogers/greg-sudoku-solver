@@ -16,6 +16,7 @@ void SetLogLevel(LogLevel);
 
 const char *GetLogLevelName(LogLevel);
 
-int Log(const char *, ...);
+int Log(LogLevel, const char *, ...);
+int StarryLog(LogLevel, unsigned starryness, const char *, ...);
 
 #endif
