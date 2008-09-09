@@ -89,7 +89,10 @@ bool HiddenSingle(Sudoku &sudoku)
         if (HiddenSingleInHouse(house, pos, val)) {
             Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
                     i, pos, val);
-            sudoku.SetRow(house, i);
+            Cell cell = sudoku.GetCell(i, pos);
+            cell.SetValue(val);
+            sudoku.SetCell(cell, i, pos);
+            sudoku.CrossHatch(i, pos);
             return true;
         }
 
@@ -97,15 +100,22 @@ bool HiddenSingle(Sudoku &sudoku)
         if (HiddenSingleInHouse(house, pos, val)) {
             Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
                     pos, i, val);
-            sudoku.SetCol(house, i);
+            Cell cell = sudoku.GetCell(pos, i);
+            cell.SetValue(val);
+            sudoku.SetCell(cell, pos, i);
+            sudoku.CrossHatch(pos, i);
             return true;
         }
 
         house = sudoku.GetBox(i);
         if (HiddenSingleInHouse(house, pos, val)) {
+            Index_t row = RowForCellInBox(i, pos), col = ColForCellInBox(i, pos);
             Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
-                    RowForCellInBox(i, pos), ColForCellInBox(i, pos), val);
-            sudoku.SetBox(house, i);
+                    row, col, val);
+            Cell cell = sudoku.GetCell(row, col);
+            cell.SetValue(val);
+            sudoku.SetCell(cell, row, col);
+            sudoku.CrossHatch(row, col);
             return true;
         }
 
@@ -170,11 +180,7 @@ bool HiddenSingleInHouse(House &house, Index_t &position, Index_t &value)
         }
 
         if (cnt == 1) {
-            // eliminate other candidates, then this cell will be a naked single
-            for (Index_t i = 1; i <= 9; ++i) {
-                if (i != val)
-                    house[pos].ExcludeCandidate(i);
-            }
+            // changing the cell will be done by the calling function
             position = pos;
             value = val;
             return true;

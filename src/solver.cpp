@@ -16,7 +16,7 @@ namespace {
     void usage();
 
     Sudoku::Format outputFormat = Sudoku::Candidates;
-    std::vector<Technique> techniques(1, &NakedSingle);
+    std::vector<Technique> techniques;
     bool bifurcate = false;
 }
 
@@ -26,8 +26,8 @@ int main(int argc, char **argv)
     ConvertCmdline(cmdline, argc, argv);
     ParseOptions(cmdline);
 
-    if (techniques.size() == 0) {
-        Log(Fatal, "You must specify at least one technique!\n");
+    if (techniques.size() == 0 && !bifurcate) {
+        Log(Fatal, "You must specify at least one technique or use bifurcation!\n");
         exit(1);
     }
 
@@ -117,15 +117,15 @@ void usage()
 {
     cout << "usage: solver [options]\n"
        "options:\n"
-       "    --help, -h                  Print this help message\n"
+       "    --help, -h                  Print this help message.\n"
        "    --output-format, -o         Print sudoku's with the output format given.\n"
        "        <value|cand|none>       The default is to print candidates.\n"
-       "    --bifurcate, -b             Use bifurcation if all other techniques fail\n"
+       "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n"
        "    --techniques, -t            Comma separated list of techniques to use, in\n"
        "        <techniques,...>        the order specified.\n"
-       "                                NOTE: NakedSingle is always applied as the\n"
-       "                                first technique, regardless of what is specified\n"
-       "                                on the command line.\n"
+       "                                NOTE: NakedSingle or HiddenSingle should be used\n"
+       "                                first as they are the only techniques which set\n"
+       "                                cells besides bifurcation.\n"
        "    Techniques:\n"
        "        ns, NakedSingle         Uses naked singles\n"
        "        hs, HiddenSingle        Uses hidden singles\n"
