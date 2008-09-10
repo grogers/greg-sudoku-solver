@@ -17,6 +17,8 @@ namespace {
     bool IsValueInHouse(const House &, Index_t);
     bool AreAllValuesInHouse(const House &);
     bool TryAllTechniques(Sudoku &, const std::vector<Technique> &);
+    bool AllCellsHaveValues(const Sudoku &);
+    bool AnyCellsBlank(const Sudoku &);
 }
 
 Sudoku &Sudoku::operator=(const Sudoku &x)
@@ -131,17 +133,17 @@ unsigned Sudoku::Solve(const std::vector<Technique> &techniques)
 }
 
 /**
- * Checks whether any more cells can possibly filled out.
+ * Checks whether it is even remotely possible to solve this puzzle
  */
 bool Sudoku::IsFutileToContinue()
 {
-    for (Index_t i = 0; i < 9; ++i) {
-        for (Index_t j = 0; j < 9; ++j) {
-            if (!_board[i][j].HasValue())
-                return false;
-        }
-    }
-    return true;
+    if (AllCellsHaveValues(*this))
+        return true;
+
+    if (AnyCellsBlank(*this))
+        return true;
+
+    return false;
 }
 
 /**
@@ -270,7 +272,7 @@ void OutputByCandidates(const Sudoku &sudoku, std::ostream &out)
             if (j%3 == 0)
                 out << "| ";
 
-            int charsput = 0;
+            unsigned charsput = 0;
             Cell cell = sudoku.GetCell(i, j);
             if (cell.HasValue()) {
                 out << cell.GetValue();
@@ -284,7 +286,7 @@ void OutputByCandidates(const Sudoku &sudoku, std::ostream &out)
                 }
             }
 
-            for (; charsput < widths[j] + 1; ++charsput)
+            for (; charsput < static_cast<unsigned>(widths[j] + 1); ++charsput)
                 out << ' ';
         }
         out << "|\n";
@@ -352,6 +354,32 @@ bool TryAllTechniques(Sudoku &sudoku, const std::vector<Technique> &techniques)
             i != techniques.end(); ++i) {
         if ((*i)(sudoku))
             return true;
+    }
+    return false;
+}
+
+bool AllCellsHaveValues(const Sudoku &sudoku)
+{
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            if (!sudoku.GetCell(i,j).HasValue())
+                return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @return true if any cells have no candidates  but are not assigned a value.
+ */
+bool AnyCellsBlank(const Sudoku &sudoku)
+{
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            Cell cell = sudoku.GetCell(i, j);
+            if (!cell.HasValue() && cell.NumCandidates() == 0)
+                return true;
+        }
     }
     return false;
 }

@@ -63,6 +63,8 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
 bool NakedSingle(Sudoku &sudoku)
 {
     Log(Trace, "Looking for Naked Singles\n");
+    bool ret = false;
+
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
             Cell cell = sudoku.GetCell(i, j);
@@ -70,11 +72,11 @@ bool NakedSingle(Sudoku &sudoku)
                 Log(Info, "Found Naked Single in cell (%d,%d) with value %d\n", i, j, cell.GetValue());
                 sudoku.SetCell(cell, i, j);
                 sudoku.CrossHatch(i, j);
-                return true;
+                ret = true; // optimization - keep looping until all are found
             }
         }
     }
-    return false;
+    return ret;
 }
 
 /**
@@ -83,6 +85,7 @@ bool NakedSingle(Sudoku &sudoku)
 bool HiddenSingle(Sudoku &sudoku)
 {
     Log(Trace, "Looking for Hidden Singles\n");
+    bool ret = false; // optimization - keep looking for more hidden singles instead of just 1
     Index_t pos, val; // used only for logging purposes
     for (Index_t i = 0; i < 9; ++i) {
         House house = sudoku.GetRow(i);
@@ -93,7 +96,7 @@ bool HiddenSingle(Sudoku &sudoku)
             cell.SetValue(val);
             sudoku.SetCell(cell, i, pos);
             sudoku.CrossHatch(i, pos);
-            return true;
+            ret = true;
         }
 
         house = sudoku.GetCol(i);
@@ -104,23 +107,23 @@ bool HiddenSingle(Sudoku &sudoku)
             cell.SetValue(val);
             sudoku.SetCell(cell, pos, i);
             sudoku.CrossHatch(pos, i);
-            return true;
+            ret = true;
         }
 
         house = sudoku.GetBox(i);
         if (HiddenSingleInHouse(house, pos, val)) {
-            Index_t row = RowForCellInBox(i, pos), col = ColForCellInBox(i, pos);
+            Index_t row = RowForCellInBox(i, pos);
+            Index_t col = ColForCellInBox(i, pos);
             Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
                     row, col, val);
             Cell cell = sudoku.GetCell(row, col);
             cell.SetValue(val);
             sudoku.SetCell(cell, row, col);
             sudoku.CrossHatch(row, col);
-            return true;
+            ret = true;
         }
-
     }
-    return false;
+    return ret;
 }
 
 

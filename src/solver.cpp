@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <boost/tokenizer.hpp>
+#include <iomanip>
 
 using namespace std;
 
@@ -32,19 +33,37 @@ int main(int argc, char **argv)
     }
 
     Sudoku sudoku;
+    unsigned numTotal = 0, numUnique = 0, numNonUnique = 0, numImpossible = 0;
 
     while (sudoku.Input(cin))
     {
         sudoku.Output(cout, outputFormat); // print the read in puzzle
 
         int solutions = sudoku.Solve(techniques);
-        if (solutions == 1)
+        if (solutions == 1) {
             cout << "puzzle was solved uniquely!\n";
-        else
+            ++numUnique;
+        } else {
             cout << "puzzle had " << solutions << " solutions\n";
+            if (solutions > 1)
+                ++numNonUnique;
+            else
+                ++numImpossible;
+        }
 
         sudoku.Output(cout, outputFormat); // print the puzzle as far as it could be completed
+
+        ++numTotal;
     }
+
+    const int width = 10;
+    cout << "Final Statistics:\n"
+         << "-----------------\n" << left
+         << "Impossible Puzzles: " << setw(width) << numImpossible << numImpossible*100/numTotal << "%\n"
+         << "Non-Unique Puzzles: " << setw(width) << numNonUnique << numNonUnique*100/numTotal << "%\n"
+         << "Unique Puzzles:     " << setw(width) << numUnique << numUnique*100/numTotal << "%\n"
+         << "-----------------\n"
+         << "Total Puzzles:      " << numTotal << '\n';
 
 	return 0;
 }
