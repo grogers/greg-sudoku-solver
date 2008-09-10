@@ -1,10 +1,25 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
 
+#include <algorithm>
+
 namespace {
     bool SelectBifurcationCell(const Sudoku &, Index_t &row, Index_t &col);
     bool NakedSingleInCell(Cell &);
     bool HiddenSingleInHouse(House &, Index_t &position, Index_t &val);
+
+    // first index (0-1) is the input house reference, second index (0-2) is a
+    // counter of cell number (3 cells are common between a box and a line)
+    typedef boost::array<boost::array<Index_t, 3>, 2> CommonCells;
+    CommonCells CommonCellsBoxRow(Index_t box, Index_t row);
+    CommonCells CommonCellsBoxCol(Index_t box, Index_t col);
+    CommonCells CommonCellsRowBox(Index_t row, Index_t box);
+    CommonCells CommonCellsColBox(Index_t col, Index_t box);
+    CommonCells ReverseCommonCells(const CommonCells &);
+    bool IntersectionOfHouses(House &, const House &, const CommonCells &);
+    bool AreAllCandidatesInHouseInCommonCells(const House &, Index_t val, const boost::array<Index_t, 3> &);
+    bool RemoveAllCandidatesInHouseNotInCommonCells(House &, Index_t val, const boost::array<Index_t, 3> &);
+
 }
 
 /**
@@ -125,7 +140,49 @@ bool HiddenSingle(Sudoku &sudoku)
     }
     return ret;
 }
+#include <iostream>
+bool IntersectionRemoval(Sudoku &sudoku)
+{
+    Log(Trace, "Looking for Box/Line Intersection Removal\n");
+    for (Index_t i = 0; i < 9; ++i) {
+        House line = sudoku.GetRow(i);
+        for (Index_t j = 0; j < 3; ++j)
+        {
+            Index_t boxIndex = BoxIndex(i, j*3);
+            House box = sudoku.GetBox(boxIndex);
+            if (IntersectionOfHouses(line, box, CommonCellsRowBox(i, boxIndex))) {
+                Log(Info, "Found an Intersection Removal at Row %d, Box %d\n", i, boxIndex);
+                sudoku.SetRow(line, i);
+                return true;
+            }
 
+            if (IntersectionOfHouses(box, line, CommonCellsBoxRow(boxIndex, i))) {
+                Log(Info, "Found an Intersection Removal at Box %d, Row %d\n", boxIndex, i);
+                sudoku.SetBox(box, boxIndex);
+                return true;
+            }
+        }
+
+        line = sudoku.GetCol(i);
+        for (Index_t j = 0; j < 3; ++j)
+        {
+            Index_t boxIndex = BoxIndex(j*3, i);
+            House box = sudoku.GetBox(boxIndex);
+            if (IntersectionOfHouses(line, box, CommonCellsColBox(i, boxIndex))) {
+                Log(Info, "Found an Intersection Removal at Col %d, Box %d\n", i, boxIndex);
+                sudoku.SetCol(line, i);
+                return true;
+            }
+
+            if (IntersectionOfHouses(box, line, CommonCellsBoxCol(boxIndex, i))) {
+                Log(Info, "Found an Intersection Removal at Box %d, Col %d\n", boxIndex, i);
+                sudoku.SetBox(box, boxIndex);
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 
 
@@ -190,6 +247,94 @@ bool HiddenSingleInHouse(House &house, Index_t &position, Index_t &value)
         }
     }
     return false;
+}
+
+CommonCells CommonCellsBoxRow(Index_t box, Index_t row)
+{
+    assert(row/3 == box/3); // logic error if the box and the line don't intersect
+
+    CommonCells cells;
+    for (Index_t i = 0; i < 3; ++i) {
+        cells[0][i] = (row%3)*3 + i;
+        cells[1][i] = (box%3)*3 + i;
+    }
+    return cells;
+}
+
+CommonCells CommonCellsBoxCol(Index_t box, Index_t col)
+{
+    assert(col/3 == box%3); // logic error if the box and the line don't intersect
+
+    CommonCells cells;
+    for (Index_t i = 0; i < 3; ++i) {
+        cells[0][i] = col%3 + i*3;
+        cells[1][i] = (box/3)*3 + i;
+    }
+    return cells;
+}
+
+CommonCells CommonCellsRowBox(Index_t row, Index_t box)
+{
+    return ReverseCommonCells(CommonCellsBoxRow(box, row));
+}
+
+CommonCells CommonCellsColBox(Index_t col, Index_t box)
+{
+    return ReverseCommonCells(CommonCellsBoxCol(box, col));
+}
+
+CommonCells ReverseCommonCells(const CommonCells &cells)
+{
+    CommonCells ret = cells;
+    ret[0].swap(ret[1]);
+    return ret;
+}
+
+/**
+ * If all the candidates of a given value in house2 occur in the cells common to
+ * house1 and house2, then any cell in house1 not in these common cells cannot be
+ * that value.
+ */
+bool IntersectionOfHouses(House &house1, const House &house2, const CommonCells &commonCells)
+{
+    for (Index_t val = 1; val <= 9; ++val) {
+        if (!AreAllCandidatesInHouseInCommonCells(house2, val, commonCells[1]))
+            continue;
+
+        if (RemoveAllCandidatesInHouseNotInCommonCells(house1, val, commonCells[0]))
+            return true;
+    }
+    return false;
+}
+
+bool AreAllCandidatesInHouseInCommonCells(const House &house, Index_t val,
+        const boost::array<Index_t, 3> &cells)
+{
+    Index_t numFound = 0;
+    for (Index_t i = 0; i < 9; ++i) {
+        if (!house[i].IsCandidate(val))
+            continue;
+
+        if (std::find(cells.begin(), cells.end(), i) == cells.end())
+            return false;
+
+        ++numFound;
+    }
+    return numFound > 0;
+}
+
+bool RemoveAllCandidatesInHouseNotInCommonCells(House &house, Index_t val,
+        const boost::array<Index_t, 3> &cells)
+{
+    Index_t numFound = 0;
+    for (Index_t i = 0; i < 9; ++i) {
+        if (std::find(cells.begin(), cells.end(), i) != cells.end())
+            continue;
+
+        if (house[i].ExcludeCandidate(val))
+            ++numFound;
+    }
+    return numFound > 0;
 }
 
 

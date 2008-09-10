@@ -12,6 +12,7 @@ unsigned Bifurcate(Sudoku &, const std::vector<Technique> &);
 
 bool NakedSingle(Sudoku &);
 bool HiddenSingle(Sudoku &);
+bool IntersectionRemoval(Sudoku &);
 
 
 
