@@ -139,7 +139,7 @@ bool HiddenSingle(Sudoku &sudoku)
     }
     return ret;
 }
-#include <iostream>
+
 bool IntersectionRemoval(Sudoku &sudoku)
 {
     Log(Trace, "searching for line and box intersections\n");
@@ -227,8 +227,19 @@ bool IntersectionRemoval(Sudoku &sudoku)
     return false;
 }
 
+bool NakedSet(Sudoku &sudoku)
+{
+    for (Index_t i = 0; i < 9; ++i) {
+        House house = sudoku.GetRow(i);
+        house = sudoku.GetCol(i);
+        house = sudoku.GetBox(i);
+    }
+}
 
-
+bool HiddenSet(Sudoku &sudoku)
+{
+    /// @fixme
+}
 
 
 namespace {
