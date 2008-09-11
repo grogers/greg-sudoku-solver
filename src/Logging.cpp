@@ -4,16 +4,17 @@
 
 namespace {
     LogLevel level = Trace;
-}
-
-LogLevel GetLogLevel()
-{
-    return level;
+    bool shouldPrintLogLevel = false;
 }
 
 void SetLogLevel(LogLevel newLevel)
 {
     level = newLevel;
+}
+
+void SetShouldPrintLogLevel(bool x)
+{
+    shouldPrintLogLevel = x;
 }
 
 const char *GetLogLevelName(LogLevel level)
@@ -38,7 +39,8 @@ int Log(LogLevel lvl, const char *fmt, ...)
     va_list va;
 
     va_start(va, fmt);
-    printf("%s: ", GetLogLevelName(lvl));
+    if (shouldPrintLogLevel)
+        printf("%s: ", GetLogLevelName(lvl));
     int ret = vprintf(fmt, va);
     va_end(va);
 
@@ -59,7 +61,8 @@ int StarryLog(LogLevel lvl, unsigned numStarLines, const char *fmt, ...)
     }
 
     va_start(va, fmt);
-    printf("%s: ", GetLogLevelName(lvl));
+    if (shouldPrintLogLevel)
+        printf("%s: ", GetLogLevelName(lvl));
     int ret = vprintf(fmt, va);
     va_end(va);
 

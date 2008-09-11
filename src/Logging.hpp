@@ -11,8 +11,8 @@ enum LogLevel
     Trace
 };
 
-LogLevel GetLogLevel();
 void SetLogLevel(LogLevel);
+void SetShouldPrintLogLevel(bool);
 
 const char *GetLogLevelName(LogLevel);
 

@@ -2,6 +2,7 @@
 #include "Logging.hpp"
 
 #include <algorithm>
+#include <sstream>
 
 namespace {
     bool SelectBifurcationCell(const Sudoku &, Index_t &row, Index_t &col);
@@ -16,9 +17,9 @@ namespace {
     CommonCells CommonCellsRowBox(Index_t row, Index_t box);
     CommonCells CommonCellsColBox(Index_t col, Index_t box);
     CommonCells ReverseCommonCells(const CommonCells &);
-    bool IntersectionOfHouses(House &, const House &, const CommonCells &);
+    bool IntersectionOfHouses(House &, const House &, const CommonCells &, std::vector<Index_t> &indexOfCellsChanged, Index_t &value);
     bool AreAllCandidatesInHouseInCommonCells(const House &, Index_t val, const boost::array<Index_t, 3> &);
-    bool RemoveAllCandidatesInHouseNotInCommonCells(House &, Index_t val, const boost::array<Index_t, 3> &);
+    bool RemoveAllCandidatesInHouseNotInCommonCells(House &, Index_t val, const boost::array<Index_t, 3> &, std::vector<Index_t> &);
 
 }
 
@@ -27,7 +28,7 @@ namespace {
  */
 unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
 {
-    StarryLog(Warning, 3, "Bifurcating... The output will now be for multiple puzzles, not just the one...\n");
+    StarryLog(Trace, 3, "bifurcating... The output will now be for multiple puzzles, not just the one.\n");
 
     Index_t row, col, num;
 
@@ -36,7 +37,7 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
         return 0;
 
     num = sudoku.GetCell(row, col).NumCandidates();
-    Log(Debug, "Bifurcating on cell (%d,%d) with %d candidates\n", row, col, num);
+    Log(Debug, "bifurcating on cell (%d,%d) with %d candidates\n", row+1, col+1, num);
 
     std::vector<Sudoku> newSudokus(num, sudoku);
     unsigned numSolved = 0;
@@ -46,7 +47,7 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
         if (!sudoku.GetCell(row, col).IsCandidate(i))
             continue;
 
-        Log(Trace, "Trying bifurcation on cell (%d,%d) of candidate %d\n", row, col, i);
+        Log(Trace, "trying bifurcation on cell (%d,%d) of candidate %d\n", row+1, col+1, i);
 
         Cell cell = sudoku.GetCell(row, col);
         cell.SetValue(i);
@@ -64,10 +65,8 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
         ++idx;
     }
 
-    if (numSolved == 1) {
-        Log(Trace, "Found a (potentially) unique solution\n");
+    if (numSolved == 1)
         sudoku = *solved;
-    }
 
     return numSolved;
 }
@@ -77,14 +76,14 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
  */
 bool NakedSingle(Sudoku &sudoku)
 {
-    Log(Trace, "Looking for Naked Singles\n");
+    Log(Trace, "searching for naked singles\n");
     bool ret = false;
 
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
             Cell cell = sudoku.GetCell(i, j);
             if (NakedSingleInCell(cell)) {
-                Log(Info, "Found Naked Single in cell (%d,%d) with value %d\n", i, j, cell.GetValue());
+                Log(Info, "naked single ==> r%dc%d = %d\n", i+1, j+1, cell.GetValue());
                 sudoku.SetCell(cell, i, j);
                 sudoku.CrossHatch(i, j);
                 ret = true; // optimization - keep looping until all are found
@@ -99,14 +98,14 @@ bool NakedSingle(Sudoku &sudoku)
  */
 bool HiddenSingle(Sudoku &sudoku)
 {
-    Log(Trace, "Looking for Hidden Singles\n");
+    Log(Trace, "searching for hidden singles\n");
     bool ret = false; // optimization - keep looking for more hidden singles instead of just 1
     Index_t pos, val; // used only for logging purposes
     for (Index_t i = 0; i < 9; ++i) {
         House house = sudoku.GetRow(i);
         if (HiddenSingleInHouse(house, pos, val)) {
-            Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
-                    i, pos, val);
+            Log(Info, "hidden single in row ==> r%dc%d = %d\n",
+                    i+1, pos+1, val);
             Cell cell = sudoku.GetCell(i, pos);
             cell.SetValue(val);
             sudoku.SetCell(cell, i, pos);
@@ -116,8 +115,8 @@ bool HiddenSingle(Sudoku &sudoku)
 
         house = sudoku.GetCol(i);
         if (HiddenSingleInHouse(house, pos, val)) {
-            Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
-                    pos, i, val);
+            Log(Info, "hidden single in column ==> r%dc%d = %d\n",
+                    pos+1, i+1, val);
             Cell cell = sudoku.GetCell(pos, i);
             cell.SetValue(val);
             sudoku.SetCell(cell, pos, i);
@@ -129,8 +128,8 @@ bool HiddenSingle(Sudoku &sudoku)
         if (HiddenSingleInHouse(house, pos, val)) {
             Index_t row = RowForCellInBox(i, pos);
             Index_t col = ColForCellInBox(i, pos);
-            Log(Info, "Found Hidden Single in cell (%d,%d) with value %d\n",
-                    row, col, val);
+            Log(Info, "hidden single in box ==> r%dc%d = %d\n",
+                    row+1, col+1, val);
             Cell cell = sudoku.GetCell(row, col);
             cell.SetValue(val);
             sudoku.SetCell(cell, row, col);
@@ -143,21 +142,45 @@ bool HiddenSingle(Sudoku &sudoku)
 #include <iostream>
 bool IntersectionRemoval(Sudoku &sudoku)
 {
-    Log(Trace, "Looking for Box/Line Intersection Removal\n");
+    Log(Trace, "searching for line and box intersections\n");
+    // these locals are for logging purposes only
+    std::vector<Index_t> cellsChanged;
+    Index_t valChanged;
     for (Index_t i = 0; i < 9; ++i) {
         House line = sudoku.GetRow(i);
         for (Index_t j = 0; j < 3; ++j)
         {
             Index_t boxIndex = BoxIndex(i, j*3);
             House box = sudoku.GetBox(boxIndex);
-            if (IntersectionOfHouses(line, box, CommonCellsRowBox(i, boxIndex))) {
-                Log(Info, "Found an Intersection Removal at Row %d, Box %d\n", i, boxIndex);
+            if (IntersectionOfHouses(line, box, CommonCellsRowBox(i, boxIndex),
+                        cellsChanged, valChanged)) {
+                std::ostringstream sstr;
+                for (Index_t k = 0; k < cellsChanged.size(); ++k) {
+                    if (k != 0)
+                        sstr << ", ";
+                    sstr << 'r' << i+1 << 'c' << cellsChanged[k]+1 << " <> "
+                        << valChanged;
+                }
+                Log(Info, "row %d intersection with box %d ==> %s\n",
+                        i+1, boxIndex+1, sstr.str().c_str());
+
                 sudoku.SetRow(line, i);
                 return true;
             }
 
-            if (IntersectionOfHouses(box, line, CommonCellsBoxRow(boxIndex, i))) {
-                Log(Info, "Found an Intersection Removal at Box %d, Row %d\n", boxIndex, i);
+            if (IntersectionOfHouses(box, line, CommonCellsBoxRow(boxIndex, i),
+                        cellsChanged, valChanged)) {
+                std::ostringstream sstr;
+                for (Index_t k = 0; k < cellsChanged.size(); ++k) {
+                    if (k != 0)
+                        sstr << ", ";
+                    sstr << 'r' << i+1 << 'c'
+                        << ColForCellInBox(boxIndex, cellsChanged[k])+1 << " <> "
+                        << valChanged;
+                }
+                Log(Info, "box %d intersection with row %d ==> %s\n",
+                        boxIndex+1, i+1, sstr.str().c_str());
+
                 sudoku.SetBox(box, boxIndex);
                 return true;
             }
@@ -168,14 +191,34 @@ bool IntersectionRemoval(Sudoku &sudoku)
         {
             Index_t boxIndex = BoxIndex(j*3, i);
             House box = sudoku.GetBox(boxIndex);
-            if (IntersectionOfHouses(line, box, CommonCellsColBox(i, boxIndex))) {
-                Log(Info, "Found an Intersection Removal at Col %d, Box %d\n", i, boxIndex);
+            if (IntersectionOfHouses(line, box, CommonCellsColBox(i, boxIndex),
+                        cellsChanged, valChanged)) {
+                std::ostringstream sstr;
+                for (Index_t k = 0; k < cellsChanged.size(); ++k) {
+                    if (k != 0)
+                        sstr << ", ";
+                    sstr << 'r' << cellsChanged[k]+1 << 'c' << i+1 << " <> "
+                        << valChanged;
+                }
+                Log(Info, "column %d intersection with box %d ==> %s\n",
+                        i+1, boxIndex+1, sstr.str().c_str());
+
                 sudoku.SetCol(line, i);
                 return true;
             }
 
-            if (IntersectionOfHouses(box, line, CommonCellsBoxCol(boxIndex, i))) {
-                Log(Info, "Found an Intersection Removal at Box %d, Col %d\n", boxIndex, i);
+            if (IntersectionOfHouses(box, line, CommonCellsBoxCol(boxIndex, i),
+                        cellsChanged, valChanged)) {
+                std::ostringstream sstr;
+                for (Index_t k = 0; k < cellsChanged.size(); ++k) {
+                    if (k != 0)
+                        sstr << ", ";
+                    sstr << 'r' << RowForCellInBox(boxIndex, cellsChanged[k])+1
+                        << 'c' << i+1 << " <> " << valChanged;
+                }
+                Log(Info, "box %d intersection with column %d ==> %s\n",
+                        boxIndex+1, i+1, sstr.str().c_str());
+
                 sudoku.SetBox(box, boxIndex);
                 return true;
             }
@@ -226,6 +269,7 @@ bool NakedSingleInCell(Cell &cell)
 
 /**
  * @return true if a change was found.
+ * @note position and value are used to get the cell changed.
  */
 bool HiddenSingleInHouse(House &house, Index_t &position, Index_t &value)
 {
@@ -294,15 +338,19 @@ CommonCells ReverseCommonCells(const CommonCells &cells)
  * If all the candidates of a given value in house2 occur in the cells common to
  * house1 and house2, then any cell in house1 not in these common cells cannot be
  * that value.
+ *
+ * @note indexOfCellsChanged and value are used for logging purposes only.
  */
-bool IntersectionOfHouses(House &house1, const House &house2, const CommonCells &commonCells)
+bool IntersectionOfHouses(House &house1, const House &house2, const CommonCells &commonCells, std::vector<Index_t> &indexOfCellsChanged, Index_t &value)
 {
     for (Index_t val = 1; val <= 9; ++val) {
         if (!AreAllCandidatesInHouseInCommonCells(house2, val, commonCells[1]))
             continue;
 
-        if (RemoveAllCandidatesInHouseNotInCommonCells(house1, val, commonCells[0]))
+        if (RemoveAllCandidatesInHouseNotInCommonCells(house1, val, commonCells[0], indexOfCellsChanged)) {
+            value = val;
             return true;
+        }
     }
     return false;
 }
@@ -323,16 +371,23 @@ bool AreAllCandidatesInHouseInCommonCells(const House &house, Index_t val,
     return numFound > 0;
 }
 
+/**
+ * @note indexOfCellsChanged is for logging purposes.
+ */
 bool RemoveAllCandidatesInHouseNotInCommonCells(House &house, Index_t val,
-        const boost::array<Index_t, 3> &cells)
+        const boost::array<Index_t, 3> &cells,
+        std::vector<Index_t> &indexOfCellsChanged)
 {
     Index_t numFound = 0;
+    indexOfCellsChanged.clear();
     for (Index_t i = 0; i < 9; ++i) {
         if (std::find(cells.begin(), cells.end(), i) != cells.end())
             continue;
 
-        if (house[i].ExcludeCandidate(val))
+        if (house[i].ExcludeCandidate(val)) {
+            indexOfCellsChanged.push_back(i);
             ++numFound;
+        }
     }
     return numFound > 0;
 }

@@ -56,14 +56,16 @@ int main(int argc, char **argv)
         ++numTotal;
     }
 
-    const int width = 10;
-    cout << "Final Statistics:\n"
-         << "-----------------\n" << left
-         << "Impossible Puzzles: " << setw(width) << numImpossible << numImpossible*100/numTotal << "%\n"
-         << "Non-Unique Puzzles: " << setw(width) << numNonUnique << numNonUnique*100/numTotal << "%\n"
-         << "Unique Puzzles:     " << setw(width) << numUnique << numUnique*100/numTotal << "%\n"
-         << "-----------------\n"
-         << "Total Puzzles:      " << numTotal << '\n';
+    if (numTotal != 0) {
+        const int width = 10;
+        cout << "Final Statistics:\n"
+             << "-----------------\n" << left
+             << "Impossible Puzzles: " << setw(width) << numImpossible << numImpossible*100/numTotal << "%\n"
+             << "Non-Unique Puzzles: " << setw(width) << numNonUnique << numNonUnique*100/numTotal << "%\n"
+             << "Unique Puzzles:     " << setw(width) << numUnique << numUnique*100/numTotal << "%\n"
+             << "-----------------\n"
+             << "Total Puzzles:      " << numTotal << '\n';
+    }
 
 	return 0;
 }
@@ -128,6 +130,8 @@ void ParseOptions(const list<string> &opts)
                 Log(Fatal, "Invalid output format \'%s\' specified\n", i->c_str());
                 usage();
             }
+        } else if (*i == "--print-log-level" || *i == "-p") {
+            SetShouldPrintLogLevel(true);
         } else if (*i == "--techniques" || *i == "-t") {
             ++i;
             if (i == opts.end()) {
@@ -167,6 +171,7 @@ void usage()
        "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n\n"
        "    --log-level, -l             Set the logging level to one of:\n"
        "        <f|e|w|i|d|t>           Fatal, Error, Warning, Info, Debug, Trace\n\n"
+       "    --print-log-level, -p       Print the log level when anything is logged.\n"
        "    --techniques, -t            Comma separated list of techniques to use, in\n"
        "        <techniques,...>        the order specified.\n"
        "                                NOTE: NakedSingle or HiddenSingle should be used\n"
