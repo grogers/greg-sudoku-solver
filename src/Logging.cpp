@@ -3,7 +3,7 @@
 #include <cstdarg>
 
 namespace {
-    LogLevel level = Trace;
+    LogLevel level = Info;
     bool shouldPrintLogLevel = false;
 }
 
