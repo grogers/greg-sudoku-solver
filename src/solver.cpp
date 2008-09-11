@@ -143,9 +143,9 @@ void ParseOptions(const list<string> &opts)
             typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
             tokenizer tokens(*i, sep);
             for (tokenizer::iterator tok = tokens.begin(); tok != tokens.end(); ++tok) {
-                if (*tok == "ns" || *tok == "NakedSingle") {
+                if (*tok == "n1" || *tok == "NakedSingle") {
                     techniques.push_back(&NakedSingle);
-                } else if (*tok == "hs" || *tok == "HiddenSingle") {
+                } else if (*tok == "h1" || *tok == "HiddenSingle") {
                     techniques.push_back(&HiddenSingle);
                 } else if (*tok == "ir" || *tok == "IntersectionRemoval") {
                     techniques.push_back(&IntersectionRemoval);
@@ -178,8 +178,8 @@ void usage()
        "                                first as they are the only techniques which set\n"
        "                                cells besides bifurcation.\n"
        "    Techniques:\n"
-       "        ns, NakedSingle         Uses naked singles\n"
-       "        hs, HiddenSingle        Uses hidden singles\n"
+       "        n1, NakedSingle         Uses naked singles\n"
+       "        h1, HiddenSingle        Uses hidden singles\n"
        "        ir, IntersectionRemoval Uses intersections between houses\n"
        ;
 
