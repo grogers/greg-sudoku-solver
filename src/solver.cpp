@@ -149,6 +149,10 @@ void ParseOptions(const list<string> &opts)
                     techniques.push_back(&HiddenSingle);
                 } else if (*tok == "ir" || *tok == "IntersectionRemoval") {
                     techniques.push_back(&IntersectionRemoval);
+                } else if (*tok == "ns" || *tok == "NakedSet") {
+                    techniques.push_back(&NakedSet);
+                } else if (*tok == "hs" || *tok == "HiddenSet") {
+                    techniques.push_back(&HiddenSet);
                 } else {
                     Log(Fatal, "Invalied argument \'%s\' given to option --techniques\n", tok->c_str());
                     usage();
@@ -181,6 +185,8 @@ void usage()
        "        n1, NakedSingle         Uses naked singles\n"
        "        h1, HiddenSingle        Uses hidden singles\n"
        "        ir, IntersectionRemoval Uses intersections between houses\n"
+       "        ns. NakedSet            Uses naked sets of order 2-4\n"
+       "        hs, HiddenSet           Uses hidden sets of order 2-4\n"
        ;
 
     exit(0);
