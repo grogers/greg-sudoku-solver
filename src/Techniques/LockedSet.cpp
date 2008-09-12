@@ -5,7 +5,7 @@ namespace {
 bool NakedSetInHouse(House &);
 std::vector<Index_t> IndicesOfPossibleLockedSet(const House &);
 bool GetNewIndicesToVisit(std::vector<Index_t> &, Index_t);
-bool NakedSetInHouseWithIndices(House &, const std::vector<Index_t> &);
+bool NakedSetInHouseWithIndices(House &, const boost::array<Index_t, 4> &, Index_t);
 
 }
 
@@ -55,18 +55,17 @@ std::vector<Index_t> IndicesOfPossibleLockedSet(const House &house)
 bool NakedSetInHouse(House &house)
 {
     std::vector<Index_t> indexList = IndicesOfPossibleLockedSet(house);
-
     for (Index_t order = 2; order <= indexList.size()/2; ++order) {
         std::vector<Index_t> indicesToVisit(order);
         for (Index_t i = 0; i < order; ++i)
             indicesToVisit[i] = i;
 
         do {
-            std::vector<Index_t> indexIntoHouse(order);
+            boost::array<Index_t, 4> indexIntoHouse;
             for (Index_t i = 0; i < order; ++i)
                 indexIntoHouse[i] = indexList[indicesToVisit[i]];
 
-            if (NakedSetInHouseWithIndices(house, indexIntoHouse)) {
+            if (NakedSetInHouseWithIndices(house, indexIntoHouse, order)) {
                 Log(Info, "found naked set of order %d in house\n", order);
                 return true;
             }
@@ -99,9 +98,8 @@ bool GetNewIndicesToVisit(std::vector<Index_t> &indicesToVisit, Index_t n)
  * If the number of candidates in the cells of the house pointed at by
  * index are equal to order (size of index), then it is a naked set.
  */
-bool NakedSetInHouseWithIndices(House &house, const std::vector<Index_t> &index)
+bool NakedSetInHouseWithIndices(House &house, const boost::array<Index_t, 4> &index, Index_t order)
 {
-    const Index_t order = index.size();
     bool ret = false;
     boost::array<Index_t, 4> candidates = {{ 0 }}; // order can't be greater than 4
     Index_t numCandidates = 0;
@@ -120,7 +118,7 @@ bool NakedSetInHouseWithIndices(House &house, const std::vector<Index_t> &index)
 
     if (numCandidates == order) {
         for (Index_t i = 0; i < 9; ++i) {
-            if (std::find(index.begin(), index.end(), i) != index.end())
+            if (std::find(index.data(), index.data() + order, i) != index.data() + order)
                 continue;
 
             for (Index_t j = 0; j < order; ++j) {
