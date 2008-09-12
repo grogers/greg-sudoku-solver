@@ -102,18 +102,23 @@ bool GetNewIndicesToVisit(std::vector<Index_t> &indicesToVisit, Index_t n)
 bool NakedSetInHouseWithIndices(House &house, const std::vector<Index_t> &index)
 {
     const Index_t order = index.size();
-    std::vector<Index_t> candidates;
     bool ret = false;
+    boost::array<Index_t, 4> candidates = {{ 0 }}; // order can't be greater than 4
+    Index_t numCandidates = 0;
+
     for (Index_t i = 0; i < order; ++i) {
         for (Index_t val = 1; val <= 9; ++val) {
             if (house[index[i]].IsCandidate(val) &&
                     std::find(candidates.begin(), candidates.end(), val) == candidates.end()) {
-                candidates.push_back(val);
+                if (numCandidates >= 4)
+                    return false;
+
+                candidates[numCandidates++] = val;
             }
         }
     }
 
-    if (candidates.size() == order) {
+    if (numCandidates == order) {
         for (Index_t i = 0; i < 9; ++i) {
             if (std::find(index.begin(), index.end(), i) != index.end())
                 continue;
