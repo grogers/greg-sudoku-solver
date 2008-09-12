@@ -1,2 +1,6 @@
 bin_PROGRAMS = solver
-solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp Techniques.cpp
+solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp \
+	Techniques/Bifurcate.cpp Techniques/NakedSingle.cpp \
+	Techniques/HiddenSingle.cpp Techniques/IntersectionRemoval.cpp
+
+# Techniques should probably be made into a library...

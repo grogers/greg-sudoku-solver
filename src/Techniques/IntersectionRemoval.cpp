@@ -1,145 +1,23 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
 
-#include <algorithm>
 #include <sstream>
 
 namespace {
-    bool SelectBifurcationCell(const Sudoku &, Index_t &row, Index_t &col);
-    bool NakedSingleInCell(Cell &);
-    bool HiddenSingleInHouse(House &, Index_t &position, Index_t &val);
-
-    // first index (0-1) is the input house reference, second index (0-2) is a
-    // counter of cell number (3 cells are common between a box and a line)
-    typedef boost::array<boost::array<Index_t, 3>, 2> CommonCells;
-    CommonCells CommonCellsBoxRow(Index_t box, Index_t row);
-    CommonCells CommonCellsBoxCol(Index_t box, Index_t col);
-    CommonCells CommonCellsRowBox(Index_t row, Index_t box);
-    CommonCells CommonCellsColBox(Index_t col, Index_t box);
-    CommonCells ReverseCommonCells(const CommonCells &);
-    bool IntersectionOfHouses(House &, const House &, const CommonCells &, std::vector<Index_t> &indexOfCellsChanged, Index_t &value);
-    bool AreAllCandidatesInHouseInCommonCells(const House &, Index_t val, const boost::array<Index_t, 3> &);
-    bool RemoveAllCandidatesInHouseNotInCommonCells(House &, Index_t val, const boost::array<Index_t, 3> &, std::vector<Index_t> &);
-
+// first index (0-1) is the input house reference, second index (0-2) is a
+// counter of cell number (3 cells are common between a box and a line)
+typedef boost::array<boost::array<Index_t, 3>, 2> CommonCells;
+CommonCells CommonCellsBoxRow(Index_t box, Index_t row);
+CommonCells CommonCellsBoxCol(Index_t box, Index_t col);
+CommonCells CommonCellsRowBox(Index_t row, Index_t box);
+CommonCells CommonCellsColBox(Index_t col, Index_t box);
+CommonCells ReverseCommonCells(const CommonCells &);
+bool IntersectionOfHouses(House &, const House &, const CommonCells &, std::vector<Index_t> &indexOfCellsChanged, Index_t &value);
+bool AreAllCandidatesInHouseInCommonCells(const House &, Index_t val, const boost::array<Index_t, 3> &);
+bool RemoveAllCandidatesInHouseNotInCommonCells(House &, Index_t val, const boost::array<Index_t, 3> &, std::vector<Index_t> &);
 }
 
-/**
- * Guess and Check.
- */
-unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
-{
-    StarryLog(Trace, 3, "bifurcating... The output will now be for multiple puzzles, not just the one.\n");
 
-    Index_t row, col, num;
-
-    // if a cell cannot be found for bifurcation assume it cannot be solved
-    if (!SelectBifurcationCell(sudoku, row, col))
-        return 0;
-
-    num = sudoku.GetCell(row, col).NumCandidates();
-    Log(Debug, "bifurcating on cell (%d,%d) with %d candidates\n", row+1, col+1, num);
-
-    std::vector<Sudoku> newSudokus(num, sudoku);
-    unsigned numSolved = 0;
-    const Sudoku *solved = NULL;
-
-    for (Index_t i = 1, idx = 0; i <= 9; ++i) {
-        if (!sudoku.GetCell(row, col).IsCandidate(i))
-            continue;
-
-        Log(Trace, "trying bifurcation on cell (%d,%d) of candidate %d\n", row+1, col+1, i);
-
-        Cell cell = sudoku.GetCell(row, col);
-        cell.SetValue(i);
-
-        newSudokus[idx].SetCell(cell, row, col);
-        newSudokus[idx].CrossHatch(row, col);
-
-        unsigned tmp = newSudokus[idx].Solve(techniques);
-
-        numSolved += tmp;
-
-        if (tmp == 1)
-            solved = &newSudokus[idx];
-
-        ++idx;
-    }
-
-    if (numSolved == 1)
-        sudoku = *solved;
-
-    return numSolved;
-}
-
-/**
- * Only 1 possible candidate in a cell.
- */
-bool NakedSingle(Sudoku &sudoku)
-{
-    Log(Trace, "searching for naked singles\n");
-    bool ret = false;
-
-    for (Index_t i = 0; i < 9; ++i) {
-        for (Index_t j = 0; j < 9; ++j) {
-            Cell cell = sudoku.GetCell(i, j);
-            if (NakedSingleInCell(cell)) {
-                Log(Info, "naked single ==> r%dc%d = %d\n", i+1, j+1, cell.GetValue());
-                sudoku.SetCell(cell, i, j);
-                sudoku.CrossHatch(i, j);
-                ret = true; // optimization - keep looping until all are found
-            }
-        }
-    }
-    return ret;
-}
-
-/**
- * A given value has only one possible location in a house.
- */
-bool HiddenSingle(Sudoku &sudoku)
-{
-    Log(Trace, "searching for hidden singles\n");
-    bool ret = false; // optimization - keep looking for more hidden singles instead of just 1
-    Index_t pos, val; // used only for logging purposes
-    for (Index_t i = 0; i < 9; ++i) {
-        House house = sudoku.GetRow(i);
-        if (HiddenSingleInHouse(house, pos, val)) {
-            Log(Info, "hidden single in row ==> r%dc%d = %d\n",
-                    i+1, pos+1, val);
-            Cell cell = sudoku.GetCell(i, pos);
-            cell.SetValue(val);
-            sudoku.SetCell(cell, i, pos);
-            sudoku.CrossHatch(i, pos);
-            ret = true;
-        }
-
-        house = sudoku.GetCol(i);
-        if (HiddenSingleInHouse(house, pos, val)) {
-            Log(Info, "hidden single in column ==> r%dc%d = %d\n",
-                    pos+1, i+1, val);
-            Cell cell = sudoku.GetCell(pos, i);
-            cell.SetValue(val);
-            sudoku.SetCell(cell, pos, i);
-            sudoku.CrossHatch(pos, i);
-            ret = true;
-        }
-
-        house = sudoku.GetBox(i);
-        if (HiddenSingleInHouse(house, pos, val)) {
-            Index_t row = RowForCellInBox(i, pos);
-            Index_t col = ColForCellInBox(i, pos);
-            Log(Info, "hidden single in box ==> r%dc%d = %d\n",
-                    row+1, col+1, val);
-            Cell cell = sudoku.GetCell(row, col);
-            cell.SetValue(val);
-            sudoku.SetCell(cell, row, col);
-            sudoku.CrossHatch(row, col);
-            ret = true;
-        }
-    }
-    return ret;
-}
-#include <iostream>
 bool IntersectionRemoval(Sudoku &sudoku)
 {
     Log(Trace, "searching for line and box intersections\n");
@@ -227,45 +105,7 @@ bool IntersectionRemoval(Sudoku &sudoku)
     return false;
 }
 
-
-
-
-
 namespace {
-
-bool SelectBifurcationCell(const Sudoku &sudoku, Index_t &row, Index_t &col)
-{
-    for (Index_t n = 1; n <= 9; ++n) {
-        for (Index_t i = 0; i < 9; ++i) {
-            for (Index_t j = 0; j < 9; ++j) {
-                if (sudoku.GetCell(i, j).NumCandidates() == n) {
-                    row = i;
-                    col = j;
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-/**
- * @return true if a change was found.
- */
-bool NakedSingleInCell(Cell &cell)
-{
-    if (cell.NumCandidates() == 1)
-    {
-        for (Index_t val = 1; val <= 9; ++val) {
-            if (cell.IsCandidate(val)) {
-                cell.SetValue(val);
-                return true;
-            }
-        }
-        assert(false); // should not have a cell with 1 candidate and no true value
-    }
-    return false;
-}
 
 /**
  * @return true if a change was found.
@@ -391,6 +231,5 @@ bool RemoveAllCandidatesInHouseNotInCommonCells(House &house, Index_t val,
     }
     return numFound > 0;
 }
-
 
 }
