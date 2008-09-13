@@ -12,7 +12,10 @@ enum LogLevel
 };
 
 void SetLogLevel(LogLevel);
+LogLevel QuietlyBifurcate();
+
 void SetShouldPrintLogLevel(bool);
+void SetShouldQuietlyBifurcate(bool);
 
 const char *GetLogLevelName(LogLevel);
 

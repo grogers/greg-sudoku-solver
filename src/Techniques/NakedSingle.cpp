@@ -17,7 +17,7 @@ bool NakedSingle(Sudoku &sudoku)
         for (Index_t j = 0; j < 9; ++j) {
             Cell cell = sudoku.GetCell(i, j);
             if (NakedSingleInCell(cell)) {
-                Log(Info, "naked single ==> r%dc%d = %d\n", i+1, j+1, cell.GetValue());
+                Log(Info, "naked single ==> r%dc%d=%d\n", i+1, j+1, cell.GetValue());
                 sudoku.SetCell(cell, i, j);
                 sudoku.CrossHatch(i, j);
                 ret = true; // optimization - keep looping until all are found

@@ -10,7 +10,7 @@ bool SelectBifurcationCell(const Sudoku &, Index_t &row, Index_t &col);
  */
 unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
 {
-    StarryLog(Trace, 3, "bifurcating... The output will now be for multiple puzzles, not just the one.\n");
+    Log(Trace, "trying bifurcatiion\n");
 
     Index_t row, col, num;
 
@@ -19,17 +19,22 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
         return 0;
 
     num = sudoku.GetCell(row, col).NumCandidates();
-    Log(Debug, "bifurcating on cell (%d,%d) with %d candidates\n", row+1, col+1, num);
+    Log(Info, "bifurcating on cell r%dc%d ==>\n", row+1, col+1);
 
     std::vector<Sudoku> newSudokus(num, sudoku);
     unsigned numSolved = 0;
     const Sudoku *solved = NULL;
 
+    /// @note this makes the solver non thread safe when doing a bifurcation,
+    /// and is only to control the output due to the implementation of
+    /// bifurcation. Remove it if you want.
+    LogLevel oldLevel = QuietlyBifurcate();
+
     for (Index_t i = 1, idx = 0; i <= 9; ++i) {
         if (!sudoku.GetCell(row, col).IsCandidate(i))
             continue;
 
-        Log(Trace, "trying bifurcation on cell (%d,%d) of candidate %d\n", row+1, col+1, i);
+        Log(Trace, "trying bifurcation on cell r%dc%d of candidate %d\n", row+1, col+1, i);
 
         Cell cell = sudoku.GetCell(row, col);
         cell.SetValue(i);
@@ -46,6 +51,8 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
 
         ++idx;
     }
+
+    SetLogLevel(oldLevel);
 
     if (numSolved == 1)
         sudoku = *solved;

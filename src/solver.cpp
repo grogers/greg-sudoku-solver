@@ -107,6 +107,8 @@ void ParseOptions(const list<string> &opts)
             }
         } else if (*i == "--bifurcate" || *i == "-b") {
             bifurcate = true;
+        } else if (*i == "--quiet-bifurcation" || *i == "-q") {
+            SetShouldQuietlyBifurcate(true);
         } else if (*i == "--log-level" || *i == "-l") {
             ++i;
             if (i == opts.end()) {
@@ -176,6 +178,8 @@ void usage()
        "        <f|e|w|i|d|t>           Fatal, Error, Warning, Info, Debug, Trace\n\n"
        "    --print-log-level, -p       Print the log level when anything is logged.\n"
        "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n\n"
+       "    --quiet-bifurcation, -q     Set the log level low while bifurcating to reduce\n"
+       "                                the number of spurious messages\n"
        "    --techniques, -t            Comma separated list of techniques to use, in\n"
        "        <techniques,...>        the order specified.\n"
        "                                NOTE: NakedSingle or HiddenSingle should be used\n"

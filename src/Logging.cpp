@@ -5,6 +5,7 @@
 namespace {
     LogLevel level = Info;
     bool shouldPrintLogLevel = false;
+    bool shouldQuietlyBifurcate = false;
 }
 
 void SetLogLevel(LogLevel newLevel)
@@ -12,9 +13,24 @@ void SetLogLevel(LogLevel newLevel)
     level = newLevel;
 }
 
+LogLevel QuietlyBifurcate()
+{
+    if (!shouldQuietlyBifurcate)
+        return level;
+
+    LogLevel oldLevel = level;
+    level = Fatal;
+    return oldLevel;
+}
+
 void SetShouldPrintLogLevel(bool x)
 {
     shouldPrintLogLevel = x;
+}
+
+void SetShouldQuietlyBifurcate(bool x)
+{
+    shouldQuietlyBifurcate = x;
 }
 
 const char *GetLogLevelName(LogLevel level)

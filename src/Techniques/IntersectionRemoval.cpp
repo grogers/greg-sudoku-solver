@@ -36,7 +36,7 @@ bool IntersectionRemoval(Sudoku &sudoku)
                 for (Index_t k = 0; k < cellsChanged.size(); ++k) {
                     if (k != 0)
                         sstr << ", ";
-                    sstr << 'r' << i+1 << 'c' << cellsChanged[k]+1 << " <> "
+                    sstr << 'r' << i+1 << 'c' << cellsChanged[k]+1 << '#'
                         << valChanged;
                 }
                 Log(Info, "row %d intersection with box %d ==> %s\n",
@@ -53,7 +53,7 @@ bool IntersectionRemoval(Sudoku &sudoku)
                     if (k != 0)
                         sstr << ", ";
                     sstr << 'r' << i+1 << 'c'
-                        << ColForCellInBox(boxIndex, cellsChanged[k])+1 << " <> "
+                        << ColForCellInBox(boxIndex, cellsChanged[k])+1 << '#'
                         << valChanged;
                 }
                 Log(Info, "box %d intersection with row %d ==> %s\n",
@@ -75,7 +75,7 @@ bool IntersectionRemoval(Sudoku &sudoku)
                 for (Index_t k = 0; k < cellsChanged.size(); ++k) {
                     if (k != 0)
                         sstr << ", ";
-                    sstr << 'r' << cellsChanged[k]+1 << 'c' << i+1 << " <> "
+                    sstr << 'r' << cellsChanged[k]+1 << 'c' << i+1 << '#'
                         << valChanged;
                 }
                 Log(Info, "column %d intersection with box %d ==> %s\n",
@@ -92,7 +92,7 @@ bool IntersectionRemoval(Sudoku &sudoku)
                     if (k != 0)
                         sstr << ", ";
                     sstr << 'r' << RowForCellInBox(boxIndex, cellsChanged[k])+1
-                        << 'c' << i+1 << " <> " << valChanged;
+                        << 'c' << i+1 << '#' << valChanged;
                 }
                 Log(Info, "box %d intersection with column %d ==> %s\n",
                         boxIndex+1, i+1, sstr.str().c_str());

@@ -16,7 +16,7 @@ bool HiddenSingle(Sudoku &sudoku)
     for (Index_t i = 0; i < 9; ++i) {
         House house = sudoku.GetRow(i);
         if (HiddenSingleInHouse(house, pos, val)) {
-            Log(Info, "hidden single in row ==> r%dc%d = %d\n",
+            Log(Info, "hidden single in row ==> r%dc%d=%d\n",
                     i+1, pos+1, val);
             Cell cell = sudoku.GetCell(i, pos);
             cell.SetValue(val);
@@ -27,7 +27,7 @@ bool HiddenSingle(Sudoku &sudoku)
 
         house = sudoku.GetCol(i);
         if (HiddenSingleInHouse(house, pos, val)) {
-            Log(Info, "hidden single in column ==> r%dc%d = %d\n",
+            Log(Info, "hidden single in column ==> r%dc%d=%d\n",
                     pos+1, i+1, val);
             Cell cell = sudoku.GetCell(pos, i);
             cell.SetValue(val);
@@ -40,7 +40,7 @@ bool HiddenSingle(Sudoku &sudoku)
         if (HiddenSingleInHouse(house, pos, val)) {
             Index_t row = RowForCellInBox(i, pos);
             Index_t col = ColForCellInBox(i, pos);
-            Log(Info, "hidden single in box ==> r%dc%d = %d\n",
+            Log(Info, "hidden single in box ==> r%dc%d=%d\n",
                     row+1, col+1, val);
             Cell cell = sudoku.GetCell(row, col);
             cell.SetValue(val);
