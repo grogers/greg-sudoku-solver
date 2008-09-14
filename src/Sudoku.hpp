@@ -7,8 +7,11 @@
 #include <boost/array.hpp>
 #include <vector>
 #include <iosfwd>
+#include <utility>
 
 typedef boost::array<Cell, 9> House;
+
+const Index_t NUM_BUDDIES = 20;
 
 class Sudoku
 {
@@ -33,6 +36,8 @@ class Sudoku
         House GetBox(Index_t box) const;
         void SetBox(const House &, Index_t box);
 
+        boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> GetBuddies(Index_t, Index_t) const;
+
         unsigned Solve(const std::vector<Technique> &);
 
         bool IsFutileToContinue();
@@ -52,6 +57,8 @@ class Sudoku
         // first index is for row, second index is for column
         boost::array<boost::array<Cell, 9>, 9> _board;
 };
+
+bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2);
 
 inline Sudoku::Sudoku()
 {
@@ -88,6 +95,5 @@ inline Index_t ColForCellInBox(Index_t box, Index_t pos)
     return (box%3)*3 + pos%3;
 }
 
-const Index_t NUM_BUDDIES = 20;
 
 #endif

@@ -107,32 +107,6 @@ bool IntersectionRemoval(Sudoku &sudoku)
 
 namespace {
 
-/**
- * @return true if a change was found.
- * @note position and value are used to get the cell changed.
- */
-bool HiddenSingleInHouse(House &house, Index_t &position, Index_t &value)
-{
-    for (Index_t val = 1; val <= 9; ++val) {
-        Index_t cnt = 0, pos = 0;
-
-        for (Index_t i = 0; i < 9; ++i) {
-            if (house[i].IsCandidate(val)) {
-                ++cnt;
-                pos = i;
-            }
-        }
-
-        if (cnt == 1) {
-            // changing the cell will be done by the calling function
-            position = pos;
-            value = val;
-            return true;
-        }
-    }
-    return false;
-}
-
 CommonCells CommonCellsBoxRow(Index_t box, Index_t row)
 {
     assert(row/3 == box/3); // logic error if the box and the line don't intersect

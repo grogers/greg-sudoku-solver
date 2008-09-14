@@ -19,5 +19,7 @@ bool HiddenSet(Sudoku &);
 
 bool BasicFish(Sudoku &);
 
+bool XyWing(Sudoku &);
+
 
 #endif

@@ -114,6 +114,53 @@ void Sudoku::SetBox(const House &house, Index_t box)
     }
 }
 
+boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> Sudoku::GetBuddies(Index_t row, Index_t col) const
+{
+    boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> ret;
+    Index_t j = 0;
+
+    for (Index_t i = 0; i < 9; ++i) {
+        if (i != col &&
+                std::find(ret.data(), ret.data() + j, std::make_pair(row, i)) ==  ret.data() + j) {
+            ret[j++] = std::make_pair(row, i);
+        }
+    }
+
+    for (Index_t i = 0; i < 9; ++i) {
+        if (i != row &&
+                std::find(ret.data(), ret.data() + j, std::make_pair(i, col)) ==  ret.data() + j) {
+            ret[j++] = std::make_pair(i, col);
+        }
+    }
+
+    Index_t boxIndex = BoxIndex(row, col);
+    for (Index_t i = 0; i < 9; ++i) {
+        Index_t irow = RowForCellInBox(boxIndex, i);
+        Index_t icol = ColForCellInBox(boxIndex, i);
+        if (irow != row && icol != col &&
+                std::find(ret.data(), ret.data() + j, std::make_pair(irow, icol)) ==  ret.data() + j) {
+            ret[j++] = std::make_pair(irow, icol);
+        }
+    }
+
+    assert(j == NUM_BUDDIES);
+    return ret;
+}
+
+bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2)
+{
+    if (row1 == row2)
+        return true;
+    if (col1 == col2)
+        return true;
+    if (BoxIndex(row1, col1) == BoxIndex(row2, col2))
+        return true;
+    return false;
+}
+
+
+
+
 unsigned Sudoku::Solve(const std::vector<Technique> &techniques)
 {
     while (!IsFutileToContinue()) {

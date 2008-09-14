@@ -2,6 +2,7 @@
 #define CELL_HPP
 
 #include "Index.hpp"
+#include <vector>
 #include <cassert>
 
 class Cell
@@ -24,6 +25,8 @@ class Cell
         unsigned short _candidates; // bit mask of candidates
         Index_t _value;
 };
+
+std::vector<Index_t> CandidatesForCell(const Cell &);
 
 /**
  * Constructs a cell with all candidates set.
@@ -103,6 +106,7 @@ inline bool Cell::ExcludeCandidate(Index_t val)
     _candidates &= ~(1 << (val - 1));
     return true;
 }
+
 
 
 #endif
