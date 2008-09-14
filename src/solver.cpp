@@ -155,8 +155,10 @@ void ParseOptions(const list<string> &opts)
                     techniques.push_back(&NakedSet);
                 } else if (*tok == "hs" || *tok == "HiddenSet") {
                     techniques.push_back(&HiddenSet);
+                } else if (*tok == "bf" || *tok == "BasicFish") {
+                    techniques.push_back(&BasicFish);
                 } else {
-                    Log(Fatal, "Invalied argument \'%s\' given to option --techniques\n", tok->c_str());
+                    Log(Fatal, "Invalid argument \'%s\' given to option --techniques\n", tok->c_str());
                     usage();
                 }
             }
@@ -188,9 +190,16 @@ void usage()
        "    Techniques:\n"
        "        n1, NakedSingle         Uses naked singles\n"
        "        h1, HiddenSingle        Uses hidden singles\n"
-       "        ir, IntersectionRemoval Uses intersections between houses\n"
-       "        ns. NakedSet            Uses naked sets of order 2-4\n"
-       "        hs, HiddenSet           Uses hidden sets of order 2-4\n"
+       "        ir, IntersectionRemoval Uses intersections between boxes and lines\n"
+       "        ns. NakedSet            Uses naked sets\n"
+       "        hs, HiddenSet           Uses hidden sets\n"
+       "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
+       //"        ff, FinnedFish          Uses finned fish\n"
+       //"        sf, SashimiFish         Uses sashimi fish\n"
+       //"        frf, FrankenFish        Uses franken fish\n"
+       //"        fff, FinnedFrankenFish  Uses finned franken fish\n"
+       //"        mf, MutantFish          Uses mutant fish\n"
+       //"        fmf, FinnedMutantFish   Uses finned mutant fish\n"
        ;
 
     exit(0);

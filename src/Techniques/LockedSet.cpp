@@ -1,5 +1,6 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
+#include "LockedSet.hpp"
 
 #include <utility>
 #include <sstream>
@@ -9,7 +10,6 @@ namespace {
 typedef std::vector<std::pair<Index_t, Index_t> > PairList;
 bool NakedSetInHouse(House &, PairList &set, PairList &changed);
 std::vector<Index_t> IndicesOfPossibleNakedSet(const House &);
-bool GetNewIndicesToVisit(std::vector<Index_t> &, Index_t);
 bool NakedSetInHouseWithIndices(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
 
 bool HiddenSetInHouse(House &, PairList &set, PairList &changed);
@@ -80,6 +80,27 @@ bool HiddenSet(Sudoku &sudoku)
     return false;
 }
 
+bool GetNewIndicesToVisit(std::vector<Index_t> &indicesToVisit, Index_t n)
+{
+    const Index_t order = indicesToVisit.size();
+    for (Index_t curr = order - 1; ; --curr) {
+        if (indicesToVisit[curr] < n - order + curr) {
+            ++indicesToVisit[curr];
+            return true;
+        }
+
+        if (curr == 0)
+            return false;
+
+        if (indicesToVisit[curr] > indicesToVisit[curr - 1] + 1) {
+            indicesToVisit[curr] = indicesToVisit[curr - 1] + 2;
+            ++indicesToVisit[curr - 1];
+            return true;
+        }
+    }
+}
+
+
 namespace {
 
 std::vector<Index_t> IndicesOfPossibleNakedSet(const House &house)
@@ -105,26 +126,6 @@ std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &house)
             ret.push_back(val);
     }
     return ret;
-}
-
-bool GetNewIndicesToVisit(std::vector<Index_t> &indicesToVisit, Index_t n)
-{
-    const Index_t order = indicesToVisit.size();
-    for (Index_t curr = order - 1; ; --curr) {
-        if (indicesToVisit[curr] < n - order + curr) {
-            ++indicesToVisit[curr];
-            return true;
-        }
-
-        if (curr == 0)
-            return false;
-
-        if (indicesToVisit[curr] > indicesToVisit[curr - 1] + 1) {
-            indicesToVisit[curr] = indicesToVisit[curr - 1] + 2;
-            ++indicesToVisit[curr - 1];
-            return true;
-        }
-    }
 }
 
 bool NakedSetInHouse(House &house, PairList &set, PairList &changed)

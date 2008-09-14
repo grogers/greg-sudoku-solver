@@ -88,4 +88,6 @@ inline Index_t ColForCellInBox(Index_t box, Index_t pos)
     return (box%3)*3 + pos%3;
 }
 
+const Index_t NUM_BUDDIES = 20;
+
 #endif
