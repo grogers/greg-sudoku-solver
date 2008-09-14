@@ -1,16 +1,21 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
+#include "Techniques.hpp"
+
+#include <boost/assign/list_of.hpp>
 
 namespace {
 bool SelectBifurcationCell(const Sudoku &, Index_t &row, Index_t &col);
+const std::vector<Technique> bifurcationTechniques =
+    boost::assign::list_of(&NakedSingle)(&HiddenSingle);
 }
 
 /**
  * Guess and Check.
  */
-unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
+unsigned Bifurcate(Sudoku &sudoku)
 {
-    Log(Trace, "trying bifurcatiion\n");
+    Log(Trace, "trying bifurcation\n");
 
     Index_t row, col, num;
 
@@ -19,7 +24,7 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
         return 0;
 
     num = sudoku.GetCell(row, col).NumCandidates();
-    Log(Info, "bifurcating on cell r%dc%d ==>\n", row+1, col+1);
+    Log(Info, "bifurcating on cell r%dc%d!!!\n", row+1, col+1);
 
     std::vector<Sudoku> newSudokus(num, sudoku);
     unsigned numSolved = 0;
@@ -42,7 +47,7 @@ unsigned Bifurcate(Sudoku &sudoku, const std::vector<Technique> &techniques)
         newSudokus[idx].SetCell(cell, row, col);
         newSudokus[idx].CrossHatch(row, col);
 
-        unsigned tmp = newSudokus[idx].Solve(techniques);
+        unsigned tmp = newSudokus[idx].Solve(bifurcationTechniques);
 
         numSolved += tmp;
 

@@ -8,7 +8,7 @@ class Sudoku;
 
 typedef boost::function<bool (Sudoku &)> Technique;
 
-unsigned Bifurcate(Sudoku &, const std::vector<Technique> &);
+unsigned Bifurcate(Sudoku &);
 
 bool NakedSingle(Sudoku &);
 bool HiddenSingle(Sudoku &);

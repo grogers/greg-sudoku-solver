@@ -168,7 +168,7 @@ unsigned Sudoku::Solve(const std::vector<Technique> &techniques)
             continue;
 
         if (UseBifurcation())
-            return Bifurcate(*this, techniques);
+            return Bifurcate(*this);
         else
             return 0;
     }
