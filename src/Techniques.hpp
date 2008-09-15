@@ -21,5 +21,7 @@ bool BasicFish(Sudoku &);
 
 bool XyWing(Sudoku &);
 
+bool UniqueRectangle(Sudoku &);
+
 
 #endif

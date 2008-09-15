@@ -1,6 +1,7 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
+#include "Techniques.hpp"
 
 #include <istream>
 #include <ostream>
@@ -24,6 +25,7 @@ namespace {
 Sudoku &Sudoku::operator=(const Sudoku &x)
 {
     _board = x._board;
+    _unique = x._unique;
     return *this;
 }
 
@@ -34,6 +36,7 @@ void Sudoku::Reset()
             _board[i][j] = Cell();
         }
     }
+    _unique = boost::logic::indeterminate;
 }
 
 /**
@@ -147,6 +150,24 @@ boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> Sudoku::GetBuddies(Index_
     return ret;
 }
 
+bool Sudoku::IsUnique()
+{
+    if (boost::logic::indeterminate(_unique)) {
+        Log(Trace, "uniqueness has not been determined yet, bifurcating to determine\n");
+        Sudoku sudoku(*this);
+        if (Bifurcate(sudoku) == 1) {
+            Log(Trace, "determined puzzle to be unique\n");
+            _unique = true;
+        } else {
+            Log(Trace, "determined puzzle to be non-unique\n");
+            _unique = false;
+        }
+    }
+
+    return _unique;
+}
+
+
 bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2)
 {
     if (row1 == row2)
@@ -167,7 +188,7 @@ unsigned Sudoku::Solve(const std::vector<Technique> &techniques)
         if (TryAllTechniques(*this, techniques))
             continue;
 
-        if (UseBifurcation())
+        if (UseBifurcation() || InBifurcation())
             return Bifurcate(*this);
         else
             return 0;

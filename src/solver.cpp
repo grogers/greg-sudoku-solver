@@ -159,6 +159,8 @@ void ParseOptions(const list<string> &opts)
                     techniques.push_back(&BasicFish);
                 } else if (*tok == "xyw" || *tok == "XyWing") {
                     techniques.push_back(&XyWing);
+                } else if (*tok == "ur" || *tok == "UniqueRectangle") {
+                    techniques.push_back(&UniqueRectangle);
                 } else {
                     Log(Fatal, "Invalid argument \'%s\' given to option --techniques\n", tok->c_str());
                     usage();
@@ -196,7 +198,8 @@ void usage()
        "        ns. NakedSet            Uses naked sets\n"
        "        hs, HiddenSet           Uses hidden sets\n"
        "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
-       "        xyw, XyWing             Uses xy-wing\n"
+       "        xyw, XyWing             Uses xy-wings\n"
+       "        ur, UniqueRectangle     Uses unique rectangles\n"
        //"        ff, FinnedFish          Uses finned fish\n"
        //"        sf, SashimiFish         Uses sashimi fish\n"
        //"        frf, FrankenFish        Uses franken fish\n"

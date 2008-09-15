@@ -8,6 +8,7 @@
 #include <vector>
 #include <iosfwd>
 #include <utility>
+#include <boost/logic/tribool.hpp>
 
 typedef boost::array<Cell, 9> House;
 
@@ -38,6 +39,8 @@ class Sudoku
 
         boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> GetBuddies(Index_t, Index_t) const;
 
+        bool IsUnique();
+
         unsigned Solve(const std::vector<Technique> &);
 
         bool IsFutileToContinue();
@@ -56,6 +59,8 @@ class Sudoku
     private:
         // first index is for row, second index is for column
         boost::array<boost::array<Cell, 9>, 9> _board;
+        // if something is unique, special techniques can be used
+        boost::logic::tribool _unique;
 };
 
 bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2);
