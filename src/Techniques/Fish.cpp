@@ -134,7 +134,7 @@ bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
             fishStr << 'r';
             for (Index_t i = 0; i < order; ++i)
                 fishStr << rowIndices[i]+1;
-            fishStr << "/c";
+            fishStr << "\\c";
             for (Index_t i = 0; i < order; ++i)
                 fishStr << colIndices[i]+1;
             fishStr << '=' << val;
