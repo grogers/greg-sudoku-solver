@@ -23,8 +23,8 @@ class Cell
 
     private:
         unsigned short _candidates; // bit mask of candidates
-        Index_t _value;
-        Index_t _numCandidates;
+        unsigned char _value;
+        unsigned char _numCandidates;
 };
 
 std::vector<Index_t> CandidatesForCell(const Cell &);
