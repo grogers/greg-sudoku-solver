@@ -24,6 +24,7 @@ class Cell
     private:
         unsigned short _candidates; // bit mask of candidates
         Index_t _value;
+        Index_t _numCandidates;
 };
 
 std::vector<Index_t> CandidatesForCell(const Cell &);
@@ -35,6 +36,7 @@ inline Cell::Cell()
 {
     _candidates = 0x1ff;
     _value = 0;
+    _numCandidates = 9;
 }
 
 /**
@@ -54,6 +56,7 @@ inline Cell &Cell::operator=(const Cell &x)
 {
     _value = x._value;
     _candidates = x._candidates;
+    _numCandidates = x._numCandidates;
     return *this;
 }
 
@@ -68,6 +71,7 @@ inline void Cell::SetValue(Index_t val)
 
     _value = val;
     _candidates = 0;
+    _numCandidates = 0;
 }
 
 inline Index_t Cell::GetValue() const
@@ -78,12 +82,7 @@ inline Index_t Cell::GetValue() const
 
 inline Index_t Cell::NumCandidates() const
 {
-    Index_t tmp = 0;
-    for (Index_t i = 0; i < 9; ++i) {
-        if (_candidates & (1 << i))
-            ++tmp;
-    }
-    return tmp;
+    return _numCandidates;
 }
 
 inline bool Cell::IsCandidate(Index_t val) const
@@ -104,6 +103,7 @@ inline bool Cell::ExcludeCandidate(Index_t val)
         return false;
 
     _candidates &= ~(1 << (val - 1));
+    --_numCandidates;
     return true;
 }
 
