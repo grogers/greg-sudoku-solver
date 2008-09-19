@@ -15,6 +15,7 @@ namespace {
     void PrintLineSeparator(const boost::array<Index_t, 9> &, std::ostream &);
     void OutputByCandidates(const Sudoku &, std::ostream &);
     bool InputByValue(Sudoku &, std::istream &);
+    bool InputByCandidates(Sudoku &, std::istream &);
     bool IsValueInHouse(const House &, Index_t);
     bool AreAllValuesInHouse(const House &);
     bool TryAllTechniques(Sudoku &, const std::vector<Technique> &);
@@ -263,7 +264,7 @@ bool Sudoku::Input(std::istream &in, Format fmt)
         case Value:
             return InputByValue(*this, in);
         case Candidates:
-            return false;
+            return InputByCandidates(*this, in);
         case None:
             return false;
         default:
@@ -379,7 +380,7 @@ bool InputByValue(Sudoku &sudoku, std::istream &in)
 
             // interpret valid values as the value to be set, everything else
             // is just an empty cell
-            if (tmp >= '1' && tmp <= '9') {
+            if (isdigit(tmp)) {
                 Cell cell(static_cast<unsigned char>(tmp - '0'));
                 sudoku.SetCell(cell, i, j);
             }
@@ -394,6 +395,50 @@ bool InputByValue(Sudoku &sudoku, std::istream &in)
     }
     return true;
 }
+
+bool InputByCandidates(Sudoku &sudoku, std::istream &in)
+{
+    sudoku.Reset();
+
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            char tmp = in.get();
+            while (!isdigit(tmp) && !in.eof())
+                in.get(tmp);
+
+            if (in.eof()) {
+                Log(Info, "End of file reached while reading a sudoku, exiting...\n");
+                return false;
+            }
+
+            std::vector<Index_t> values;
+            values.reserve(9);
+            while (isdigit(tmp) && !in.eof()) {
+                values.push_back(tmp - '0');
+                in.get(tmp);
+            }
+
+            Cell cell;
+            if (values.size() == 1) {
+                cell.SetValue(values.front());
+            } else {
+                for (Index_t val = 1; val <= 9; ++val) {
+                    if (std::find(values.begin(), values.end(), val) == values.end())
+                        cell.ExcludeCandidate(val);
+                }
+            }
+            sudoku.SetCell(cell, i, j);
+        }
+    }
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            if (sudoku.GetCell(i, j).HasValue())
+                sudoku.CrossHatch(i, j);
+        }
+    }
+    return true;
+}
+
 
 bool IsValueInHouse(const House &house, Index_t val)
 {

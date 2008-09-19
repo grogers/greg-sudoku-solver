@@ -3,236 +3,427 @@
 #include "LockedSet.hpp"
 
 #include <sstream>
+#include <set>
+#include <iostream>
 
 namespace {
-bool BasicFishForValue(Sudoku &, Index_t val);
-std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &, Index_t);
-bool HouseHasValueSet(const House &, Index_t);
-std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &, Index_t);
-bool RowBaseBasicFish(Sudoku &, Index_t val);
-bool RowBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
-bool ColBaseBasicFish(Sudoku &, Index_t val);
-bool ColBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
-struct ChangedCell
-{
-    ChangedCell(Index_t _row, Index_t _col, Index_t _val) : row(_row), col(_col), val(_val) {}
-    Index_t row;
-    Index_t col;
-    Index_t val;
-};
-const char *OrderToString(Index_t order);
+const char *FishSize(Index_t);
+bool AllFishForValue(Sudoku &, Index_t value);
+bool BasicFishForValue(Sudoku &, Index_t value);
+bool FrankenFishForValue(Sudoku &, Index_t value);
+bool MutantFishForValue(Sudoku &, Index_t value);
+enum HouseType { ROW, COL, BOX };
+enum FishShape { BASIC, FRANKEN, MUTANT };
+bool SectorsNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
+bool SectorNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
+bool BasicFishWithIndices(Sudoku &,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &,
+        Index_t, Index_t);
+std::vector<std::pair<HouseType, Index_t> > PossibleRowColSectors(const Sudoku &, Index_t);
+std::vector<std::pair<HouseType, Index_t> > AllPossibleSectors(const Sudoku &, Index_t);
+bool IsHouseOpenOnValue(const House &house, Index_t value);
+bool IsCellInHouse(Index_t, Index_t, HouseType, Index_t);
+int Vertixness(Index_t row, Index_t col,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order);
+std::set<std::pair<Index_t, Index_t> > BuildListOfFins(const Sudoku &,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order);
+bool MakeEliminations(Sudoku &sudoku,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order,
+        const std::set<std::pair<Index_t, Index_t> > &fins, FishShape);
+void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order,
+        const std::set<std::pair<Index_t, Index_t> > &fins, FishShape shape);
+void OutputSectors(std::ostringstream &,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
+bool CellSeesAllFins(Index_t row, Index_t col,
+        const std::set<std::pair<Index_t, Index_t> > &fins);
+
 }
 
-bool BasicFish(Sudoku &sudoku)
+bool AllFish(Sudoku &sudoku)
 {
-    Log(Trace, "searching for basic fish\n");
+    Log(Trace, "searching for all types of fish\n");
     for (Index_t val = 1; val <= 9; ++val) {
-        if (BasicFishForValue(sudoku, val))
+        if (AllFishForValue(sudoku, val))
             return true;
     }
     return false;
 }
-
 
 namespace {
-bool BasicFishForValue(Sudoku &sudoku, Index_t val)
+bool AllFishForValue(Sudoku &sudoku, Index_t value)
 {
-    if (RowBaseBasicFish(sudoku, val))
+    if (BasicFishForValue(sudoku, value))
         return true;
-    if (ColBaseBasicFish(sudoku, val))
+
+    if (FrankenFishForValue(sudoku, value))
+        return true;
+
+    if (MutantFishForValue(sudoku, value))
         return true;
 
     return false;
 }
 
-std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &sudoku, Index_t val)
+bool BasicFishForValue(Sudoku &sudoku, Index_t value)
 {
-    std::vector<Index_t> ret;
-    for (Index_t i = 0; i < 9; ++i) {
-        if (!HouseHasValueSet(sudoku.GetRow(i), val))
-            ret.push_back(i);
+    const std::vector<std::pair<HouseType, Index_t> > possSectors =
+        PossibleRowColSectors(sudoku, value);
+
+    // find all exemplars (x-wing to whale)
+    Index_t max = possSectors.size()/2;
+    if (max >= 1)
+        --max;
+    max = std::min<Index_t>(max, 6);
+    for (Index_t order = 2; order <= max; ++order) {
+        std::vector<Index_t> baseSectorIndex(order);
+        for (Index_t i = 0; i < order; ++i)
+            baseSectorIndex[i] = i;
+
+        do {
+            boost::array<std::pair<HouseType, Index_t>, 6> base;
+            for (Index_t i = 0; i < order; ++i)
+                 base[i] = possSectors[baseSectorIndex[i]];
+
+            if (SectorNotBasicFish(base, order))
+                continue;
+
+            std::vector<Index_t> coverSectorIndex(order);
+            for (Index_t i = 0; i < order; ++i)
+                coverSectorIndex[i] = i;
+
+            do {
+                boost::array<std::pair<HouseType, Index_t>, 6> cover;
+                for (Index_t i = 0; i < order; ++i)
+                     cover[i] = possSectors[coverSectorIndex[i]];
+
+                if (SectorNotBasicFish(cover, order))
+                    continue;
+
+                if (SectorsNotBasicFish(base, cover, order))
+                    continue;
+
+                if (BasicFishWithIndices(sudoku, base, cover, value, order))
+                    return true;
+            } while (GetNewIndicesToVisit(coverSectorIndex, possSectors.size()));
+        } while (GetNewIndicesToVisit(baseSectorIndex, possSectors.size()));
     }
-    return ret;
+
+    return false;
 }
 
-bool HouseHasValueSet(const House &house, Index_t val)
+bool FrankenFishForValue(Sudoku &, Index_t value)
 {
-    for (Index_t i = 0; i < 9; ++i) {
-        if (house[i].HasValue() && house[i].GetValue() == val)
+    return false; // FIXME
+}
+
+bool MutantFishForValue(Sudoku &, Index_t value)
+{
+    return false; // FIXME
+}
+
+bool SectorNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &sector, Index_t order)
+{
+    for (Index_t i = 1; i < order; ++i) {
+        if (sector[i].first != sector[0].first)
             return true;
     }
     return false;
 }
 
-std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &sudoku, Index_t val)
+bool SectorsNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order)
 {
-    std::vector<Index_t> ret;
+    // base must be different than the cover, ie one is rows, one is columns
+    if (base[0].first == cover[0].first)
+        return true;
+    else
+        return false;
+}
+
+std::vector<std::pair<HouseType, Index_t> >
+PossibleRowColSectors(const Sudoku &sudoku, Index_t value)
+{
+    std::vector<std::pair<HouseType, Index_t> > ret;
+
     for (Index_t i = 0; i < 9; ++i) {
-        if (!HouseHasValueSet(sudoku.GetCol(i), val))
-            ret.push_back(i);
+        if (IsHouseOpenOnValue(sudoku.GetRow(i), value))
+            ret.push_back(std::make_pair(ROW, i));
+    }
+
+    for (Index_t i = 0; i < 9; ++i) {
+        if (IsHouseOpenOnValue(sudoku.GetCol(i), value))
+            ret.push_back(std::make_pair(COL, i));
+    }
+    assert(ret.size()%2 == 0); // i think this must be the case
+    return ret;
+}
+
+std::vector<std::pair<HouseType, Index_t> >
+AllPossibleSectors(const Sudoku &sudoku, Index_t value)
+{
+    std::vector<std::pair<HouseType, Index_t> > ret =
+        PossibleRowColSectors(sudoku, value);
+
+    for (Index_t i = 0; i < 9; ++i) {
+        if (IsHouseOpenOnValue(sudoku.GetBox(i), value))
+            ret.push_back(std::make_pair(BOX, i));
+    }
+    assert(ret.size()%3 == 0); // i think this must be the case
+    return ret;
+}
+
+bool IsHouseOpenOnValue(const House &house, Index_t value)
+{
+    for (Index_t i = 0; i < 9; ++i) {
+        if (house[i].HasValue() && house[i].GetValue() == value)
+            return false;
+    }
+    return true;
+}
+
+bool IsCellInHouse(Index_t row, Index_t col, HouseType type, Index_t idx)
+{
+    switch (type) {
+        case ROW: return row == idx;
+        case COL: return col == idx;
+        case BOX: return BoxIndex(row, col) == idx;
+        default: return false;
+    }
+}
+
+/**
+ * @return number of base sectors minus the number of cover sectors a cell is
+ * contained in.
+ *
+ * If this value is negative, any candidate there is an elimination if it sees
+ * all fins (or there are no fins)
+ * If this value is positive, any candidate there is a fin.
+ * If this value is zero, a candidate may exist there but doesn't have to.
+ */
+int Vertixness(Index_t row, Index_t col,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order)
+{
+    int ret = 0;
+    for (Index_t i = 0; i < order; ++i) {
+        ret += IsCellInHouse(row, col, base[i].first, base[i].second);
+        ret -= IsCellInHouse(row, col, cover[i].first, cover[i].second);
     }
     return ret;
 }
 
-bool RowBaseBasicFish(Sudoku &sudoku, Index_t val)
+std::set<std::pair<Index_t, Index_t> > BuildListOfFins(const Sudoku &sudoku,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order)
 {
-    std::vector<Index_t> indexList = IndicesOfPossibleRowBaseBasicFish(sudoku, val);
-    for (Index_t order = 2; order <= indexList.size()/2; ++order) {
-        std::vector<Index_t> indicesToVisit(order);
-        for (Index_t i = 0; i < order; ++i)
-            indicesToVisit[i] = i;
-
-        do {
-            boost::array<Index_t, 4> rowIndices;
-            for (Index_t i = 0; i < order; ++i)
-                rowIndices[i] = indexList[indicesToVisit[i]];
-
-            if (RowBaseBasicFishWithIndices(sudoku, val, rowIndices, order))
-                return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indexList.size()));
+    std::set<std::pair<Index_t, Index_t> > ret;
+    for (Index_t i = 0; i < order; ++i) {
+        switch (base[i].first) {
+            case ROW:
+                for (Index_t j = 0; j < 9; ++j) {
+                    Index_t row = base[i].second, col = j;
+                    Cell cell = sudoku.GetCell(row, col);
+                    if (cell.IsCandidate(value) &&
+                            Vertixness(row, col, base, cover, order) > 0)
+                        ret.insert(std::make_pair(row, col));
+                }
+                break;
+            case COL:
+                for (Index_t j = 0; j < 9; ++j) {
+                    Index_t row = j, col = base[i].second;
+                    Cell cell = sudoku.GetCell(row, col);
+                    if (cell.IsCandidate(value) &&
+                            Vertixness(row, col, base, cover, order) > 0)
+                        ret.insert(std::make_pair(row, col));
+                }
+                break;
+            case BOX:
+                for (Index_t j = 0; j < 9; ++j) {
+                    Index_t row = RowForCellInBox(base[i].second, j);
+                    Index_t col = ColForCellInBox(base[i].second, j);
+                    Cell cell = sudoku.GetCell(row, col);
+                    if (cell.IsCandidate(value) &&
+                            Vertixness(row, col, base, cover, order) > 0)
+                        ret.insert(std::make_pair(row, col));
+                }
+                break;
+        }
     }
-    return false;
+    return ret;
 }
 
-bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index_t, 4> &rowIndices, Index_t order)
+bool BasicFishWithIndices(Sudoku &sudoku,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order)
+{
+    std::set<std::pair<Index_t, Index_t> > fins =
+        BuildListOfFins(sudoku, base, cover, value, order);
+    return MakeEliminations(sudoku, base, cover, value, order, fins, BASIC);
+}
+
+bool MakeEliminations(Sudoku &sudoku,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order, const std::set<std::pair<Index_t, Index_t> > &fins,
+        FishShape shape)
 {
     bool ret = false;
-    boost::array<Index_t, 4> colIndices = {{ 0 }};
-    Index_t numCols = 0;
-
+    std::vector<std::pair<Index_t, Index_t> > changed;
     for (Index_t i = 0; i < order; ++i) {
-        for (Index_t j = 0; j < 9; ++j) {
-            if (sudoku.GetCell(rowIndices[i], j).IsCandidate(val) &&
-                    std::find(colIndices.data(), colIndices.data() + numCols, j) == colIndices.data() + numCols) {
-                if (numCols >= order)
-                    return false;
-
-                colIndices[numCols++] = j;
-            }
-        }
-    }
-
-    if (numCols == order) {
-        std::vector<ChangedCell> changed;
-        for (Index_t i = 0; i < 9; ++i) {
-            if (std::find(rowIndices.data(), rowIndices.data() + order, i) != rowIndices.data() + order)
-                continue;
-
-            for (Index_t j = 0; j < order; ++j) {
-                Cell cell = sudoku.GetCell(i, colIndices[j]);
-                if (cell.ExcludeCandidate(val))
-                {
-                    changed.push_back(ChangedCell(i, colIndices[j], val));
-                    sudoku.SetCell(cell, i, colIndices[j]);
-                    ret = true;
+        switch (cover[i].first) {
+            case ROW:
+                for (Index_t j = 0; j < 9; ++j) {
+                    Index_t row = cover[i].second, col = j;
+                    if (Vertixness(row, col, base, cover, order) < 0 &&
+                            CellSeesAllFins(row, col, fins)) {
+                        Cell cell = sudoku.GetCell(row, col);
+                        if (cell.ExcludeCandidate(value)) {
+                            sudoku.SetCell(cell, row, col);
+                            changed.push_back(std::make_pair(row, col));
+                            ret = true;
+                        }
+                    }
                 }
-            }
-        }
-
-        if (ret) {
-            std::ostringstream fishStr, changedStr;
-            fishStr << 'r';
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << rowIndices[i]+1;
-            fishStr << "\\c";
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << colIndices[i]+1;
-            fishStr << '=' << val;
-
-            for (std::vector<ChangedCell>::const_iterator i = changed.begin();
-                    i != changed.end(); ++i) {
-                if (i != changed.begin())
-                    changedStr << ", ";
-                changedStr << 'r' << i->row+1 << 'c' << i->col+1 << '#' << i->val;
-            }
-
-            Log(Info, "basic %s %s ==> %s\n", OrderToString(order),
-                    fishStr.str().c_str(), changedStr.str().c_str());
+                break;
+            case COL:
+                for (Index_t j = 0; j < 9; ++j) {
+                    Index_t row = j, col = cover[i].second;
+                    if (Vertixness(row, col, base, cover, order) < 0 &&
+                            CellSeesAllFins(row, col, fins)) {
+                        Cell cell = sudoku.GetCell(row, col);
+                        if (cell.ExcludeCandidate(value)) {
+                            sudoku.SetCell(cell, row, col);
+                            changed.push_back(std::make_pair(row, col));
+                            ret = true;
+                        }
+                    }
+                }
+                break;
+            case BOX:
+                for (Index_t j = 0; j < 9; ++j) {
+                    Index_t row = RowForCellInBox(cover[i].second, j);
+                    Index_t col = ColForCellInBox(cover[i].second, j);
+                    if (Vertixness(row, col, base, cover, order) < 0 &&
+                            CellSeesAllFins(row, col, fins)) {
+                        Cell cell = sudoku.GetCell(row, col);
+                        if (cell.ExcludeCandidate(value)) {
+                            sudoku.SetCell(cell, row, col);
+                            changed.push_back(std::make_pair(row, col));
+                            ret = true;
+                        }
+                    }
+                }
+                break;
         }
     }
+
+    if (ret)
+        LogChanges(changed, base, cover, value, order, fins, shape);
+
     return ret;
 }
 
-bool ColBaseBasicFish(Sudoku &sudoku, Index_t val)
+void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &changed,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t value, Index_t order,
+        const std::set<std::pair<Index_t, Index_t> > &fins, FishShape shape)
 {
-    std::vector<Index_t> indexList = IndicesOfPossibleColBaseBasicFish(sudoku, val);
-    for (Index_t order = 2; order <= indexList.size()/2; ++order) {
-        std::vector<Index_t> indicesToVisit(order);
-        for (Index_t i = 0; i < order; ++i)
-            indicesToVisit[i] = i;
+    std::ostringstream shapeStr, fishStr, changedStr;
 
-        do {
-            boost::array<Index_t, 4> colIndices;
-            for (Index_t i = 0; i < order; ++i)
-                colIndices[i] = indexList[indicesToVisit[i]];
+    if (!fins.empty())
+        shapeStr << "finned ";
 
-            if (ColBaseBasicFishWithIndices(sudoku, val, colIndices, order))
-                return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indexList.size()));
+    switch (shape) {
+        case BASIC:
+            if (fins.empty())
+                shapeStr << "basic ";
+            break;
+        case FRANKEN:
+            shapeStr << "franken ";
+            break;
+        case MUTANT:
+            shapeStr << "mutant ";
+            break;
     }
-    return false;
+    shapeStr << FishSize(order);
+
+    OutputSectors(fishStr, base, order);
+    fishStr << '\\';
+    OutputSectors(fishStr, cover, order);
+    if (!fins.empty())
+        fishStr << "+{";
+    for (std::set<std::pair<Index_t, Index_t> >::const_iterator i = fins.begin();
+            i != fins.end(); ++i) {
+        if (i != fins.begin())
+            fishStr << ',';
+        fishStr << 'r' << i->first+1 << 'c' << i->second+1;
+    }
+    if (!fins.empty())
+        fishStr << '}';
+    fishStr << '=' << value;
+
+    for (std::vector<std::pair<Index_t, Index_t> >::const_iterator i = changed.begin();
+            i != changed.end(); ++i) {
+        if (i != changed.begin())
+            changedStr << ", ";
+        changedStr << 'r' << i->first+1 << 'c' << i->second+1 << '#'
+            << value;
+    }
+
+    Log(Info, "%s %s ==> %s\n", shapeStr.str().c_str(), fishStr.str().c_str(),
+            changedStr.str().c_str());
 }
 
-bool ColBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index_t, 4> &colIndices, Index_t order)
+void OutputSectors(std::ostringstream &sstr,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &sectors,
+        Index_t order)
 {
-    bool ret = false;
-    boost::array<Index_t, 4> rowIndices = {{ 0 }};
-    Index_t numRows = 0;
-
+    HouseType curr = static_cast<HouseType>(-1);
     for (Index_t i = 0; i < order; ++i) {
-        for (Index_t j = 0; j < 9; ++j) {
-            if (sudoku.GetCell(j, colIndices[i]).IsCandidate(val) &&
-                    std::find(rowIndices.data(), rowIndices.data() + numRows, j) == rowIndices.data() + numRows) {
-                if (numRows >= order)
-                    return false;
-
-                rowIndices[numRows++] = j;
-            }
+        if (sectors[i].first == ROW) {
+            if (curr != ROW)
+                sstr << 'r';
+            curr = ROW;
+            sstr << sectors[i].second+1;
+        } else if (sectors[i].first == COL) {
+            if (curr != COL)
+                sstr << 'c';
+            curr = COL;
+            sstr << sectors[i].second+1;
+        } else if (sectors[i].first == BOX) {
+            if (curr != BOX)
+                sstr << 'b';
+            curr = BOX;
+            sstr << sectors[i].second+1;
         }
     }
-
-    if (numRows == order) {
-        std::vector<ChangedCell> changed;
-        for (Index_t i = 0; i < 9; ++i) {
-            if (std::find(colIndices.data(), colIndices.data() + order, i) != colIndices.data() + order)
-                continue;
-
-            for (Index_t j = 0; j < order; ++j) {
-                Cell cell = sudoku.GetCell(rowIndices[j], i);
-                if (cell.ExcludeCandidate(val))
-                {
-                    changed.push_back(ChangedCell(rowIndices[j], i, val));
-                    sudoku.SetCell(cell, rowIndices[j], i);
-                    ret = true;
-                }
-            }
-        }
-
-        if (ret) {
-            std::ostringstream fishStr, changedStr;
-            fishStr << 'c';
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << colIndices[i]+1;
-            fishStr << "/r";
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << rowIndices[i]+1;
-            fishStr << '=' << val;
-
-            for (std::vector<ChangedCell>::const_iterator i = changed.begin();
-                    i != changed.end(); ++i) {
-                if (i != changed.begin())
-                    changedStr << ", ";
-                changedStr << 'r' << i->row+1 << 'c' << i->col+1 << '#' << i->val;
-            }
-
-            Log(Info, "basic %s %s ==> %s\n", OrderToString(order),
-                    fishStr.str().c_str(), changedStr.str().c_str());
-        }
-    }
-    return ret;
 }
 
-const char *OrderToString(Index_t order)
+bool CellSeesAllFins(Index_t row, Index_t col,
+        const std::set<std::pair<Index_t, Index_t> > &fins)
+{
+    for (std::set<std::pair<Index_t, Index_t> >::const_iterator i = fins.begin();
+            i != fins.end(); ++i) {
+        if (!IsBuddy(row, col, i->first, i->second))
+            return false;
+    }
+    return true;
+}
+
+const char *FishSize(Index_t order)
 {
     switch (order) {
         case 1: return "1-fish";

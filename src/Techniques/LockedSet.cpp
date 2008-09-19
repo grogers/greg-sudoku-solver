@@ -80,21 +80,22 @@ bool HiddenSet(Sudoku &sudoku)
     return false;
 }
 
-bool GetNewIndicesToVisit(std::vector<Index_t> &indicesToVisit, Index_t n)
+bool GetNewIndicesToVisit(std::vector<Index_t> &indices, Index_t n)
 {
-    const Index_t order = indicesToVisit.size();
-    for (Index_t curr = order - 1; ; --curr) {
-        if (indicesToVisit[curr] < n - order + curr) {
-            ++indicesToVisit[curr];
+    const Index_t order = indices.size();
+    for (Index_t i = order - 1; ; --i) {
+        if (indices[i] < n - order + i) {
+            ++indices[i];
             return true;
         }
 
-        if (curr == 0)
+        if (i == 0)
             return false;
 
-        if (indicesToVisit[curr] > indicesToVisit[curr - 1] + 1) {
-            indicesToVisit[curr] = indicesToVisit[curr - 1] + 2;
-            ++indicesToVisit[curr - 1];
+        if (indices[i] > indices[i-1] + 1) {
+            ++indices[i-1];
+            for (Index_t j = i; j < order; ++j)
+                indices[j] = indices[j-1] + 1;
             return true;
         }
     }

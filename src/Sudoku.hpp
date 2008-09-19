@@ -53,7 +53,7 @@ class Sudoku
             None
         };
 
-        void Output(std::ostream &, Format = Value) const;
+        void Output(std::ostream &, Format = Candidates) const;
         bool Input(std::istream &, Format = Value);
 
     private:

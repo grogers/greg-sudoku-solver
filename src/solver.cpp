@@ -17,6 +17,7 @@ namespace {
     void usage();
 
     Sudoku::Format outputFormat = Sudoku::Candidates;
+    Sudoku::Format inputFormat = Sudoku::Value;
     std::vector<Technique> techniques;
     bool bifurcate = false;
 }
@@ -35,7 +36,7 @@ int main(int argc, char **argv)
     Sudoku sudoku;
     unsigned numTotal = 0, numUnique = 0, numNonUnique = 0, numImpossible = 0;
 
-    while (sudoku.Input(cin))
+    while (sudoku.Input(cin, inputFormat))
     {
         sudoku.Output(cout, outputFormat); // print the read in puzzle
 
@@ -105,6 +106,23 @@ void ParseOptions(const list<string> &opts)
                 Log(Fatal, "Invalid output format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
                 exit(1);
             }
+        } else if (*i == "--input-format" || *i == "-i") {
+            ++i;
+            if (i == opts.end()) {
+                Log(Fatal, "No argument given to option --input-format\n");
+                exit(1);
+            }
+
+            if (*i == "value") {
+                inputFormat = Sudoku::Value;
+            } else if (*i == "cand") {
+                inputFormat = Sudoku::Candidates;
+            } else if (*i == "none") {
+                inputFormat = Sudoku::None;
+            } else {
+                Log(Fatal, "Invalid input format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
+                exit(1);
+            }
         } else if (*i == "--bifurcate" || *i == "-b") {
             bifurcate = true;
         } else if (*i == "--quiet-bifurcation" || *i == "-q") {
@@ -157,6 +175,8 @@ void ParseOptions(const list<string> &opts)
                     techniques.push_back(&HiddenSet);
                 } else if (*tok == "bf" || *tok == "BasicFish") {
                     techniques.push_back(&BasicFish);
+                } else if (*tok == "af" || *tok == "AllFish") {
+                    techniques.push_back(&AllFish);
                 } else if (*tok == "xyw" || *tok == "XyWing") {
                     techniques.push_back(&XyWing);
                 } else if (*tok == "ur" || *tok == "UniqueRectangle") {
@@ -180,12 +200,14 @@ void usage()
        "    --help, -h                  Print this help message.\n\n"
        "    --output-format, -o         Print sudoku's with the output format given.\n"
        "        <value|cand|none>       The default is to print candidates.\n\n"
+       "    --input-format, -i          Read sudoku's in with the input format given.\n"
+       "        <value|cand|none>       The default is to input by values.\n\n"
        "    --log-level, -l             Set the logging level to one of:\n"
        "        <f|e|w|i|d|t>           Fatal, Error, Warning, Info, Debug, Trace\n\n"
        "    --print-log-level, -p       Print the log level when anything is logged.\n"
        "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n\n"
        "    --quiet-bifurcation, -q     Set the log level low while bifurcating to reduce\n"
-       "                                the number of spurious messages\n"
+       "                                the number of spurious messages.\n"
        "    --techniques, -t            Comma separated list of techniques to use, in\n"
        "        <techniques,...>        the order specified.\n"
        "                                NOTE: NakedSingle or HiddenSingle should be used\n"
@@ -198,6 +220,9 @@ void usage()
        "        ns. NakedSet            Uses naked sets\n"
        "        hs, HiddenSet           Uses hidden sets\n"
        "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
+       "        af, AllFish             Uses any kind of fish, of any size. NOTE: this\n"
+       "                                does not distinguish between finned and sashimi\n"
+       "                                fish, it just lists them as finned\n"
        "        xyw, XyWing             Uses xy-wings\n"
        "        ur, UniqueRectangle     Uses unique rectangles\n"
        //"        ff, FinnedFish          Uses finned fish\n"
