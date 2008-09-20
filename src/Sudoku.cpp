@@ -380,7 +380,7 @@ bool InputByValue(Sudoku &sudoku, std::istream &in)
 
             // interpret valid values as the value to be set, everything else
             // is just an empty cell
-            if (isdigit(tmp)) {
+            if (isdigit(tmp) && tmp != '0') {
                 Cell cell(static_cast<unsigned char>(tmp - '0'));
                 sudoku.SetCell(cell, i, j);
             }

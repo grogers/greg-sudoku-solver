@@ -175,12 +175,16 @@ void ParseOptions(const list<string> &opts)
                     techniques.push_back(&HiddenSet);
                 } else if (*tok == "bf" || *tok == "BasicFish") {
                     techniques.push_back(&BasicFish);
-                } else if (*tok == "af" || *tok == "AllFish") {
-                    techniques.push_back(&AllFish);
                 } else if (*tok == "xyw" || *tok == "XyWing") {
                     techniques.push_back(&XyWing);
                 } else if (*tok == "ur" || *tok == "UniqueRectangle") {
                     techniques.push_back(&UniqueRectangle);
+                } else if (*tok == "fif" || *tok == "FinnedFish") {
+                    techniques.push_back(&FinnedFish);
+                } else if (*tok == "frf" || *tok == "FrankenFish") {
+                    techniques.push_back(&FrankenFish);
+                } else if (*tok == "mf" || *tok == "MutantFish") {
+                    techniques.push_back(&MutantFish);
                 } else {
                     Log(Fatal, "Invalid argument \'%s\' given to option --techniques\n", tok->c_str());
                     usage();
@@ -220,17 +224,11 @@ void usage()
        "        ns. NakedSet            Uses naked sets\n"
        "        hs, HiddenSet           Uses hidden sets\n"
        "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
-       "        af, AllFish             Uses any kind of fish, of any size. NOTE: this\n"
-       "                                does not distinguish between finned and sashimi\n"
-       "                                fish, it just lists them as finned\n"
        "        xyw, XyWing             Uses xy-wings\n"
        "        ur, UniqueRectangle     Uses unique rectangles\n"
-       //"        ff, FinnedFish          Uses finned fish\n"
-       //"        sf, SashimiFish         Uses sashimi fish\n"
-       //"        frf, FrankenFish        Uses franken fish\n"
-       //"        fff, FinnedFrankenFish  Uses finned franken fish\n"
-       //"        mf, MutantFish          Uses mutant fish\n"
-       //"        fmf, FinnedMutantFish   Uses finned mutant fish\n"
+       "        fif, FinnedFish         Uses finned fish\n"
+       "        frf, FrankenFish        Uses franken fish\n"
+       "        mf, MutantFish          Uses mutant fish\n"
        ;
 
     exit(0);

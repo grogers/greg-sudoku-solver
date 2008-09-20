@@ -18,7 +18,9 @@ bool NakedSet(Sudoku &);
 bool HiddenSet(Sudoku &);
 
 bool BasicFish(Sudoku &);
-bool AllFish(Sudoku &);
+bool FinnedFish(Sudoku &);
+bool FrankenFish(Sudoku &);
+bool MutantFish(Sudoku &);
 
 bool XyWing(Sudoku &);
 
