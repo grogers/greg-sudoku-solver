@@ -229,6 +229,8 @@ void usage()
        "        fif, FinnedFish         Uses finned fish\n"
        "        frf, FrankenFish        Uses franken fish\n"
        "        mf, MutantFish          Uses mutant fish\n"
+       "                                NOTE: this solver does not distinguish finned fish\n"
+       "                                from sashimi fish\n"
        ;
 
     exit(0);
