@@ -30,7 +30,7 @@ unsigned Bifurcate(Sudoku &sudoku)
         return 0;
 
     num = sudoku.GetCell(row, col).NumCandidates();
-    Log(Info, "bifurcating on cell r%dc%d!!!\n", row+1, col+1);
+    Log(Info, "bifurcating on cell r%dc%d\n", row+1, col+1);
 
     std::vector<Sudoku> newSudokus(num, sudoku);
     unsigned numSolved = 0;
@@ -61,8 +61,11 @@ unsigned Bifurcate(Sudoku &sudoku)
 
         numSolved += tmp;
 
-        if (tmp == 1)
+        if (tmp > 0)
             solved = &newSudokus[idx];
+
+        if (tmp > 1)
+            break;
 
         ++idx;
     }
@@ -70,7 +73,7 @@ unsigned Bifurcate(Sudoku &sudoku)
     inBifurcation = wasInBifurcation;
     SetLogLevel(oldLevel);
 
-    if (numSolved == 1)
+    if (numSolved > 0)
         sudoku = *solved;
 
     return numSolved;

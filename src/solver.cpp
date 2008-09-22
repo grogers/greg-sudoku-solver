@@ -41,15 +41,15 @@ int main(int argc, char **argv)
         sudoku.Output(cout, outputFormat); // print the read in puzzle
 
         int solutions = sudoku.Solve(techniques);
-        if (solutions == 1) {
-            cout << "puzzle was solved uniquely!\n";
+        if (solutions == 0) {
+            cout << "puzzle was impossible\n";
+            ++numImpossible;
+        } else if (solutions == 1) {
+            cout << "puzzle was unique\n";
             ++numUnique;
         } else {
-            cout << "puzzle had " << solutions << " solutions\n";
-            if (solutions > 1)
-                ++numNonUnique;
-            else
-                ++numImpossible;
+            cout << "puzzle was non-unique\n";
+            ++numNonUnique;
         }
 
         sudoku.Output(cout, outputFormat); // print the puzzle as far as it could be completed
