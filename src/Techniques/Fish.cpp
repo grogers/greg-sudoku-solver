@@ -54,7 +54,16 @@ void OutputSectors(std::ostringstream &,
         const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
 bool CellSeesAllFins(Index_t row, Index_t col,
         const std::set<std::pair<Index_t, Index_t> > &fins);
-
+bool AllSectorsIntersectEachOther(
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t order);
+bool SectorsIntersectHouse(
+        const boost::array<std::pair<HouseType, Index_t>, 6> &sectors,
+        const std::pair<HouseType, Index_t> &house,
+        Index_t order);
+bool HousesIntersect(const std::pair<HouseType, Index_t> &house1,
+        const std::pair<HouseType, Index_t> &house2);
 }
 
 bool FinnedFish(Sudoku &sudoku)
@@ -282,20 +291,7 @@ bool SectorsNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> 
             return true;
     }
 
-    // box indexes can't be the same
-    for (Index_t i = 0; i < order; ++i) {
-        if (base[i].first != BOX)
-            continue;
-
-        for (Index_t j = 0; j < order; ++j) {
-            if (cover[j].first != BOX)
-                continue;
-
-            if (base[i].second == cover[j].second)
-                return true;
-        }
-    }
-    return false;
+    return !AllSectorsIntersectEachOther(base, cover, order);
 }
 
 bool SectorsNotMutantFish(const boost::array<std::pair<HouseType, Index_t>, 6> & base,
@@ -309,7 +305,8 @@ bool SectorsNotMutantFish(const boost::array<std::pair<HouseType, Index_t>, 6> &
             }
         }
     }
-    return false;
+
+    return !AllSectorsIntersectEachOther(base, cover, order);
 }
 
 std::vector<std::pair<HouseType, Index_t> >
@@ -525,8 +522,9 @@ void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &changed,
     OutputSectors(fishStr, base, order);
     fishStr << '\\';
     OutputSectors(fishStr, cover, order);
+    fishStr << '=' << value;
     if (!fins.empty())
-        fishStr << "+{";
+        fishStr << ",fins={";
     for (std::set<std::pair<Index_t, Index_t> >::const_iterator i = fins.begin();
             i != fins.end(); ++i) {
         if (i != fins.begin())
@@ -535,7 +533,6 @@ void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &changed,
     }
     if (!fins.empty())
         fishStr << '}';
-    fishStr << '=' << value;
 
     for (std::vector<std::pair<Index_t, Index_t> >::const_iterator i = changed.begin();
             i != changed.end(); ++i) {
@@ -598,5 +595,66 @@ const char *FishSize(Index_t order)
         default: return "unknown";
     }
 }
+
+/**
+ * Checks whether all sectors in the base intersect a sector of the cover and vv.
+ */
+bool AllSectorsIntersectEachOther(
+        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
+        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        Index_t order)
+{
+    for (Index_t i = 0; i < order; ++i) {
+        if (!SectorsIntersectHouse(base, cover[i], order) ||
+                !SectorsIntersectHouse(cover, base[i], order)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool SectorsIntersectHouse(
+        const boost::array<std::pair<HouseType, Index_t>, 6> &sectors,
+        const std::pair<HouseType, Index_t> &house,
+        Index_t order)
+{
+    for (Index_t i = 0; i < order; ++i) {
+        if (HousesIntersect(sectors[i], house))
+            return true;
+    }
+    return false;
+}
+
+bool HousesIntersect(const std::pair<HouseType, Index_t> &house1,
+        const std::pair<HouseType, Index_t> &house2)
+{
+    switch (house1.first) {
+        case ROW:
+            switch (house2.first) {
+                case ROW: return false;
+                case COL: return true;
+                case BOX: return (house1.second/3)*3 == (house2.second/3)*3;
+                default: return false;
+            }
+        case COL:
+            switch (house2.first) {
+                case ROW: return true;
+                case COL: return false;
+                case BOX: return (house1.second/3)*3 == (house2.second%3)*3;
+                default: return false;
+            }
+        case BOX:
+            switch (house2.first) {
+                case ROW: return (house1.second/3)*3 == (house2.second/3)*3;
+                case COL: return (house1.second%3)*3 == (house2.second/3)*3;
+                case BOX: return false;
+                default: return false;
+            }
+        default:
+            return false;
+    }
+}
+
+
 
 }
