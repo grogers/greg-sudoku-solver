@@ -9,7 +9,8 @@ namespace {
 // pair is (index, value)
 typedef std::vector<std::pair<Index_t, Index_t> > PairList;
 bool NakedSetInHouse(House &, PairList &set, PairList &changed);
-std::vector<Index_t> IndicesOfPossibleNakedSet(const House &);
+std::vector<Index_t> IndicesOfPossibleNakedSet(const House &, Index_t order);
+Index_t MaxSizeOfSetInHouse(const House &);
 bool NakedSetInHouseWithIndices(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
 
 bool HiddenSetInHouse(House &, PairList &set, PairList &changed);
@@ -104,15 +105,26 @@ bool GetNewIndicesToVisit(std::vector<Index_t> &indices, Index_t n)
 
 namespace {
 
-std::vector<Index_t> IndicesOfPossibleNakedSet(const House &house)
+std::vector<Index_t> IndicesOfPossibleNakedSet(const House &house, Index_t order)
 {
     std::vector<Index_t> ret;
     for (Index_t i = 0; i < 9; ++i) {
-        if (!house[i].HasValue())
+        if (house[i].NumCandidates() <= order && !house[i].HasValue())
             ret.push_back(i);
     }
     return ret;
 }
+
+Index_t MaxSizeOfSetInHouse(const House &house)
+{
+    Index_t ret = 0;
+    for (Index_t i = 0; i < 9; ++i) {
+        if (!house[i].HasValue())
+            ++ret;
+    }
+    return ret/2;
+}
+
 
 std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &house)
 {
@@ -131,8 +143,12 @@ std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &house)
 
 bool NakedSetInHouse(House &house, PairList &set, PairList &changed)
 {
-    std::vector<Index_t> indexList = IndicesOfPossibleNakedSet(house);
-    for (Index_t order = 2; order <= indexList.size()/2; ++order) {
+    Index_t max = MaxSizeOfSetInHouse(house);
+    for (Index_t order = 2; order <= max; ++order) {
+        std::vector<Index_t> indices = IndicesOfPossibleNakedSet(house, order);
+        if (indices.size() < order)
+            continue;
+
         std::vector<Index_t> indicesToVisit(order);
         for (Index_t i = 0; i < order; ++i)
             indicesToVisit[i] = i;
@@ -140,11 +156,11 @@ bool NakedSetInHouse(House &house, PairList &set, PairList &changed)
         do {
             boost::array<Index_t, 4> indexIntoHouse;
             for (Index_t i = 0; i < order; ++i)
-                indexIntoHouse[i] = indexList[indicesToVisit[i]];
+                indexIntoHouse[i] = indices[indicesToVisit[i]];
 
             if (NakedSetInHouseWithIndices(house, indexIntoHouse, order, set, changed))
                 return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indexList.size()));
+        } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
     }
     return false;
 }
