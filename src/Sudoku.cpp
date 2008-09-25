@@ -1,6 +1,5 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
-#include "Options.hpp"
 #include "Techniques.hpp"
 
 #include <istream>
@@ -183,13 +182,13 @@ bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2)
 
 
 
-unsigned Sudoku::Solve(const std::vector<Technique> &techniques)
+unsigned Sudoku::Solve(const std::vector<Technique> &techniques, bool useBifurcation)
 {
     while (!IsFutileToContinue()) {
         if (TryAllTechniques(*this, techniques))
             continue;
 
-        if (UseBifurcation() || InBifurcation())
+        if (useBifurcation)
             return Bifurcate(*this);
         else
             return 0;

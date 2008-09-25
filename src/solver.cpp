@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     {
         sudoku.Output(cout, outputFormat); // print the read in puzzle
 
-        int solutions = sudoku.Solve(techniques);
+        int solutions = sudoku.Solve(techniques, bifurcate);
         if (solutions == 0) {
             cout << "puzzle was impossible\n";
             ++numImpossible;
@@ -69,11 +69,6 @@ int main(int argc, char **argv)
     }
 
 	return 0;
-}
-
-bool UseBifurcation()
-{
-    return bifurcate;
 }
 
 namespace {

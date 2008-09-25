@@ -41,7 +41,7 @@ class Sudoku
 
         bool IsUnique();
 
-        unsigned Solve(const std::vector<Technique> &);
+        unsigned Solve(const std::vector<Technique> &, bool useBifurcation);
 
         bool IsFutileToContinue();
         bool IsSolved();

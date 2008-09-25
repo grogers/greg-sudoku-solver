@@ -8,12 +8,6 @@ namespace {
 bool SelectBifurcationCell(const Sudoku &, Index_t &row, Index_t &col);
 const std::vector<Technique> bifurcationTechniques =
     boost::assign::list_of(&NakedSingle)(&HiddenSingle);
-bool inBifurcation = false;
-}
-
-bool InBifurcation()
-{
-    return inBifurcation;
 }
 
 /**
@@ -41,10 +35,6 @@ unsigned Bifurcate(Sudoku &sudoku)
     /// bifurcation. Remove it if you want.
     LogLevel oldLevel = QuietlyBifurcate();
 
-    // so does this
-    bool wasInBifurcation = inBifurcation;
-    inBifurcation = true;
-
     for (Index_t i = 1, idx = 0; i <= 9; ++i) {
         if (!sudoku.GetCell(row, col).IsCandidate(i))
             continue;
@@ -57,7 +47,7 @@ unsigned Bifurcate(Sudoku &sudoku)
         newSudokus[idx].SetCell(cell, row, col);
         newSudokus[idx].CrossHatch(row, col);
 
-        unsigned tmp = newSudokus[idx].Solve(bifurcationTechniques);
+        unsigned tmp = newSudokus[idx].Solve(bifurcationTechniques, true);
 
         numSolved += tmp;
 
@@ -70,7 +60,6 @@ unsigned Bifurcate(Sudoku &sudoku)
         ++idx;
     }
 
-    inBifurcation = wasInBifurcation;
     SetLogLevel(oldLevel);
 
     if (numSolved > 0)
