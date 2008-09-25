@@ -15,7 +15,6 @@ bool NakedSetInHouseWithIndices(House &, const boost::array<Index_t, 4> &, Index
 
 bool HiddenSetInHouse(House &, PairList &set, PairList &changed);
 std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &, Index_t order);
-Index_t CountNumTimesValueOpenInHouse(const House &, Index_t value);
 bool HiddenSetInHouseWithValues(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
 
 void LogChangesForRow(Index_t row, const PairList &set, const PairList &changed, const char *setType);
@@ -103,6 +102,15 @@ bool GetNewIndicesToVisit(std::vector<Index_t> &indices, Index_t n)
     }
 }
 
+Index_t NumTimesValueOpenInHouse(const House &house, Index_t value)
+{
+    Index_t ret = 0;
+    for (Index_t i = 0; i < 9; ++i) {
+        if (house[i].IsCandidate(value))
+            ++ret;
+    }
+    return ret;
+}
 
 namespace {
 
@@ -126,22 +134,11 @@ Index_t MaxSizeOfSetInHouse(const House &house)
     return ret/2;
 }
 
-Index_t CountNumTimesValueOpenInHouse(const House &house, Index_t value)
-{
-    Index_t ret = 0;
-    for (Index_t i = 0; i < 9; ++i) {
-        if (house[i].IsCandidate(value))
-            ++ret;
-    }
-    return ret;
-}
-
-
 std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &house, Index_t order)
 {
     std::vector<Index_t> ret;
     for (Index_t val = 1; val <= 9; ++val) {
-        Index_t num = CountNumTimesValueOpenInHouse(house, val);
+        Index_t num = NumTimesValueOpenInHouse(house, val);
         if (num <= order && num != 0)
             ret.push_back(val);
     }

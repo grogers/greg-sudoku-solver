@@ -4,22 +4,22 @@
 
 #include <sstream>
 
+#include <boost/tuple/tuple.hpp>
+
 namespace {
-bool BasicFishForValue(Sudoku &, Index_t val);
-std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &, Index_t);
-bool HouseHasValueSet(const House &, Index_t);
-std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &, Index_t);
+typedef boost::tuple<Index_t, Index_t, Index_t> RowColVal;
+
+Index_t MaxSizeOfBasicFish(const Sudoku &, Index_t value);
+std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &, Index_t, Index_t);
+std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &, Index_t, Index_t);
 bool RowBaseBasicFish(Sudoku &, Index_t val);
 bool RowBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
 bool ColBaseBasicFish(Sudoku &, Index_t val);
 bool ColBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
-struct ChangedCell
-{
-    ChangedCell(Index_t _row, Index_t _col, Index_t _val) : row(_row), col(_col), val(_val) {}
-    Index_t row;
-    Index_t col;
-    Index_t val;
-};
+void LogBasicFish(bool rowBase, const boost::array<Index_t, 4> &rows,
+        const boost::array<Index_t, 4> &cols,
+        const std::vector<RowColVal> &changed,
+        Index_t value, Index_t order);
 const char *OrderToString(Index_t order);
 }
 
@@ -27,7 +27,9 @@ bool BasicFish(Sudoku &sudoku)
 {
     Log(Trace, "searching for basic fish\n");
     for (Index_t val = 1; val <= 9; ++val) {
-        if (BasicFishForValue(sudoku, val))
+        if (RowBaseBasicFish(sudoku, val))
+            return true;
+        if (ColBaseBasicFish(sudoku, val))
             return true;
     }
     return false;
@@ -35,49 +37,51 @@ bool BasicFish(Sudoku &sudoku)
 
 
 namespace {
-bool BasicFishForValue(Sudoku &sudoku, Index_t val)
+Index_t MaxSizeOfBasicFish(const Sudoku &sudoku, Index_t value)
 {
-    if (RowBaseBasicFish(sudoku, val))
-        return true;
-    if (ColBaseBasicFish(sudoku, val))
-        return true;
-
-    return false;
+    Index_t cnt = 0;
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            Cell cell = sudoku.GetCell(i, j);
+            if (cell.HasValue() && cell.GetValue() == value)
+                ++cnt;
+        }
+    }
+    return (9 - cnt)/2;
 }
 
-std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &sudoku, Index_t val)
+
+std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &sudoku, Index_t value, Index_t order)
 {
     std::vector<Index_t> ret;
     for (Index_t i = 0; i < 9; ++i) {
-        if (!HouseHasValueSet(sudoku.GetRow(i), val))
+        Index_t num = NumTimesValueOpenInHouse(sudoku.GetRow(i), value);
+        if (num <= order && num != 0)
             ret.push_back(i);
     }
     return ret;
 }
 
-bool HouseHasValueSet(const House &house, Index_t val)
-{
-    for (Index_t i = 0; i < 9; ++i) {
-        if (house[i].HasValue() && house[i].GetValue() == val)
-            return true;
-    }
-    return false;
-}
-
-std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &sudoku, Index_t val)
+std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &sudoku, Index_t value, Index_t order)
 {
     std::vector<Index_t> ret;
     for (Index_t i = 0; i < 9; ++i) {
-        if (!HouseHasValueSet(sudoku.GetCol(i), val))
+        Index_t num = NumTimesValueOpenInHouse(sudoku.GetCol(i), value);
+        if (num <= order && num != 0)
             ret.push_back(i);
     }
     return ret;
 }
 
-bool RowBaseBasicFish(Sudoku &sudoku, Index_t val)
+bool RowBaseBasicFish(Sudoku &sudoku, Index_t value)
 {
-    std::vector<Index_t> indexList = IndicesOfPossibleRowBaseBasicFish(sudoku, val);
-    for (Index_t order = 2; order <= indexList.size()/2; ++order) {
+    Index_t max = MaxSizeOfBasicFish(sudoku, value);
+    for (Index_t order = 2; order <= max; ++order) {
+        std::vector<Index_t> indices =
+            IndicesOfPossibleRowBaseBasicFish(sudoku, value, order);
+        if (indices.size() < order)
+            continue;
+
         std::vector<Index_t> indicesToVisit(order);
         for (Index_t i = 0; i < order; ++i)
             indicesToVisit[i] = i;
@@ -85,11 +89,11 @@ bool RowBaseBasicFish(Sudoku &sudoku, Index_t val)
         do {
             boost::array<Index_t, 4> rowIndices;
             for (Index_t i = 0; i < order; ++i)
-                rowIndices[i] = indexList[indicesToVisit[i]];
+                rowIndices[i] = indices[indicesToVisit[i]];
 
-            if (RowBaseBasicFishWithIndices(sudoku, val, rowIndices, order))
+            if (RowBaseBasicFishWithIndices(sudoku, value, rowIndices, order))
                 return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indexList.size()));
+        } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
     }
     return false;
 }
@@ -113,7 +117,7 @@ bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
     }
 
     if (numCols == order) {
-        std::vector<ChangedCell> changed;
+        std::vector<RowColVal> changed;
         for (Index_t i = 0; i < 9; ++i) {
             if (std::find(rowIndices.data(), rowIndices.data() + order, i) != rowIndices.data() + order)
                 continue;
@@ -122,41 +126,28 @@ bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
                 Cell cell = sudoku.GetCell(i, colIndices[j]);
                 if (cell.ExcludeCandidate(val))
                 {
-                    changed.push_back(ChangedCell(i, colIndices[j], val));
+                    changed.push_back(RowColVal(i, colIndices[j], val));
                     sudoku.SetCell(cell, i, colIndices[j]);
                     ret = true;
                 }
             }
         }
 
-        if (ret) {
-            std::ostringstream fishStr, changedStr;
-            fishStr << 'r';
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << rowIndices[i]+1;
-            fishStr << "\\c";
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << colIndices[i]+1;
-            fishStr << '=' << val;
-
-            for (std::vector<ChangedCell>::const_iterator i = changed.begin();
-                    i != changed.end(); ++i) {
-                if (i != changed.begin())
-                    changedStr << ", ";
-                changedStr << 'r' << i->row+1 << 'c' << i->col+1 << '#' << i->val;
-            }
-
-            Log(Info, "basic %s %s ==> %s\n", OrderToString(order),
-                    fishStr.str().c_str(), changedStr.str().c_str());
-        }
+        if (ret)
+            LogBasicFish(true, rowIndices, colIndices, changed, val, order);
     }
     return ret;
 }
 
-bool ColBaseBasicFish(Sudoku &sudoku, Index_t val)
+bool ColBaseBasicFish(Sudoku &sudoku, Index_t value)
 {
-    std::vector<Index_t> indexList = IndicesOfPossibleColBaseBasicFish(sudoku, val);
-    for (Index_t order = 2; order <= indexList.size()/2; ++order) {
+    Index_t max = MaxSizeOfBasicFish(sudoku, value);
+    for (Index_t order = 2; order <= max; ++order) {
+        std::vector<Index_t> indices =
+            IndicesOfPossibleColBaseBasicFish(sudoku, value, order);
+        if (indices.size() < order)
+            continue;
+
         std::vector<Index_t> indicesToVisit(order);
         for (Index_t i = 0; i < order; ++i)
             indicesToVisit[i] = i;
@@ -164,11 +155,11 @@ bool ColBaseBasicFish(Sudoku &sudoku, Index_t val)
         do {
             boost::array<Index_t, 4> colIndices;
             for (Index_t i = 0; i < order; ++i)
-                colIndices[i] = indexList[indicesToVisit[i]];
+                colIndices[i] = indices[indicesToVisit[i]];
 
-            if (ColBaseBasicFishWithIndices(sudoku, val, colIndices, order))
+            if (ColBaseBasicFishWithIndices(sudoku, value, colIndices, order))
                 return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indexList.size()));
+        } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
     }
     return false;
 }
@@ -192,7 +183,7 @@ bool ColBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
     }
 
     if (numRows == order) {
-        std::vector<ChangedCell> changed;
+        std::vector<RowColVal> changed;
         for (Index_t i = 0; i < 9; ++i) {
             if (std::find(colIndices.data(), colIndices.data() + order, i) != colIndices.data() + order)
                 continue;
@@ -201,35 +192,43 @@ bool ColBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
                 Cell cell = sudoku.GetCell(rowIndices[j], i);
                 if (cell.ExcludeCandidate(val))
                 {
-                    changed.push_back(ChangedCell(rowIndices[j], i, val));
+                    changed.push_back(RowColVal(rowIndices[j], i, val));
                     sudoku.SetCell(cell, rowIndices[j], i);
                     ret = true;
                 }
             }
         }
 
-        if (ret) {
-            std::ostringstream fishStr, changedStr;
-            fishStr << 'c';
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << colIndices[i]+1;
-            fishStr << "/r";
-            for (Index_t i = 0; i < order; ++i)
-                fishStr << rowIndices[i]+1;
-            fishStr << '=' << val;
-
-            for (std::vector<ChangedCell>::const_iterator i = changed.begin();
-                    i != changed.end(); ++i) {
-                if (i != changed.begin())
-                    changedStr << ", ";
-                changedStr << 'r' << i->row+1 << 'c' << i->col+1 << '#' << i->val;
-            }
-
-            Log(Info, "basic %s %s ==> %s\n", OrderToString(order),
-                    fishStr.str().c_str(), changedStr.str().c_str());
-        }
+        if (ret)
+            LogBasicFish(false, rowIndices, colIndices, changed, val, order);
     }
     return ret;
+}
+
+void LogBasicFish(bool rowBase, const boost::array<Index_t, 4> &rows,
+        const boost::array<Index_t, 4> &cols,
+        const std::vector<RowColVal> &changed,
+        Index_t value, Index_t order)
+{
+    std::ostringstream fishStr, changedStr;
+
+    fishStr << (rowBase?'r':'c');
+    for (Index_t i = 0; i < order; ++i)
+        fishStr << (rowBase?rows[i]+1:cols[i]+1);
+    fishStr << '/' << (rowBase?'c':'r');
+    for (Index_t i = 0; i < order; ++i)
+        fishStr << (rowBase?cols[i]+1:rows[i]+1);
+    fishStr << '=' << value;
+
+    for (std::vector<RowColVal>::const_iterator i = changed.begin();
+            i != changed.end(); ++i) {
+        if (i != changed.begin())
+            changedStr << ", ";
+        changedStr << 'r' << i->get<0>()+1 << 'c' << i->get<1>()+1 << '#' << i->get<2>();
+    }
+
+    Log(Info, "%s %s ==> %s\n", OrderToString(order),
+            fishStr.str().c_str(), changedStr.str().c_str());
 }
 
 const char *OrderToString(Index_t order)
