@@ -58,6 +58,10 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(solver_SOURCES)
 DIST_SOURCES = $(solver_SOURCES)
 ETAGS = etags
@@ -148,8 +152,8 @@ solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp Cell.cpp \
 	Techniques/Bifurcate.cpp Techniques/NakedSingle.cpp \
 	Techniques/HiddenSingle.cpp Techniques/IntersectionRemoval.cpp \
 	Techniques/LockedSet.cpp Techniques/Fish.cpp Techniques/BasicFish.cpp \
-	Techniques/XyWing.cpp \
-	Techniques/UniqueRectangle.cpp
+	Techniques/XyWing.cpp Techniques/UniqueRectangle.cpp \
+	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp Techniques/LockedSet.hpp
 
 all: all-am
 
