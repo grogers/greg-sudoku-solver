@@ -12,23 +12,31 @@
 using namespace std;
 
 namespace {
-    void ConvertCmdline(list<string> &, int argc, char **argv);
-    void ParseOptions(const list<string> &);
-    void usage();
 
-    Sudoku::Format outputFormat = Sudoku::Candidates;
-    Sudoku::Format inputFormat = Sudoku::Value;
-    std::vector<Technique> techniques;
-    bool bifurcate = false;
+    struct SolverOptions {
+        Sudoku::Format outputFormat;
+        Sudoku::Format inputFormat;
+        std::vector<Technique> techniques;
+        bool bifurcate;
+
+        SolverOptions()
+            : outputFormat(Sudoku::Candidates), inputFormat(Sudoku::Value),
+            bifurcate(false) {}
+    };
+
+    void ConvertCmdline(list<string> &, int argc, char **argv);
+    void ParseOptions(const list<string> &, SolverOptions &);
+    void usage();
 }
 
 int main(int argc, char **argv)
 {
     list<string> cmdline;
     ConvertCmdline(cmdline, argc, argv);
-    ParseOptions(cmdline);
+    SolverOptions opts;
+    ParseOptions(cmdline, opts);
 
-    if (techniques.size() == 0 && !bifurcate) {
+    if (opts.techniques.size() == 0 && !opts.bifurcate) {
         Log(Fatal, "You must specify at least one technique or use bifurcation!\n");
         exit(1);
     }
@@ -36,11 +44,11 @@ int main(int argc, char **argv)
     Sudoku sudoku;
     unsigned numTotal = 0, numUnique = 0, numNonUnique = 0, numImpossible = 0;
 
-    while (sudoku.Input(cin, inputFormat))
+    while (sudoku.Input(cin, opts.inputFormat))
     {
-        sudoku.Output(cout, outputFormat); // print the read in puzzle
+        sudoku.Output(cout, opts.outputFormat); // print the read in puzzle
 
-        int solutions = sudoku.Solve(techniques, bifurcate);
+        int solutions = sudoku.Solve(opts.techniques, opts.bifurcate);
         if (solutions == 0) {
             cout << "puzzle was impossible\n";
             ++numImpossible;
@@ -52,7 +60,7 @@ int main(int argc, char **argv)
             ++numNonUnique;
         }
 
-        sudoku.Output(cout, outputFormat); // print the puzzle as far as it could be completed
+        sudoku.Output(cout, opts.outputFormat); // print the puzzle as far as it could be completed
 
         ++numTotal;
     }
@@ -79,52 +87,52 @@ void ConvertCmdline(list<string> &out, int argc, char **argv)
         out.push_back(argv[i]);
 }
 
-void ParseOptions(const list<string> &opts)
+void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
 {
-    for (list<string>::const_iterator i = opts.begin(); i != opts.end(); ++i) {
+    for (list<string>::const_iterator i = cmdline.begin(); i != cmdline.end(); ++i) {
         if (*i == "--help" || *i == "-h") {
             usage();
         } else if (*i == "--output-format" || *i == "-o") {
             ++i;
-            if (i == opts.end()) {
+            if (i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --output-format\n");
                 exit(1);
             }
 
             if (*i == "value") {
-                outputFormat = Sudoku::Value;
+                opts.outputFormat = Sudoku::Value;
             } else if (*i == "cand") {
-                outputFormat = Sudoku::Candidates;
+                opts.outputFormat = Sudoku::Candidates;
             } else if (*i == "none") {
-                outputFormat = Sudoku::None;
+                opts.outputFormat = Sudoku::None;
             } else {
                 Log(Fatal, "Invalid output format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
                 exit(1);
             }
         } else if (*i == "--input-format" || *i == "-i") {
             ++i;
-            if (i == opts.end()) {
+            if (i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --input-format\n");
                 exit(1);
             }
 
             if (*i == "value") {
-                inputFormat = Sudoku::Value;
+                opts.inputFormat = Sudoku::Value;
             } else if (*i == "cand") {
-                inputFormat = Sudoku::Candidates;
+                opts.inputFormat = Sudoku::Candidates;
             } else if (*i == "none") {
-                inputFormat = Sudoku::None;
+                opts.inputFormat = Sudoku::None;
             } else {
                 Log(Fatal, "Invalid input format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
                 exit(1);
             }
         } else if (*i == "--bifurcate" || *i == "-b") {
-            bifurcate = true;
+            opts.bifurcate = true;
         } else if (*i == "--quiet-bifurcation" || *i == "-q") {
             SetShouldQuietlyBifurcate(true);
         } else if (*i == "--log-level" || *i == "-l") {
             ++i;
-            if (i == opts.end()) {
+            if (i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --log-level\n");
                 exit(1);
             }
@@ -149,7 +157,7 @@ void ParseOptions(const list<string> &opts)
             SetShouldPrintLogLevel(true);
         } else if (*i == "--techniques" || *i == "-t") {
             ++i;
-            if (i == opts.end()) {
+            if (i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --techniques\n");
                 exit(1);
             }
@@ -159,27 +167,27 @@ void ParseOptions(const list<string> &opts)
             tokenizer tokens(*i, sep);
             for (tokenizer::iterator tok = tokens.begin(); tok != tokens.end(); ++tok) {
                 if (*tok == "n1" || *tok == "NakedSingle") {
-                    techniques.push_back(&NakedSingle);
+                    opts.techniques.push_back(&NakedSingle);
                 } else if (*tok == "h1" || *tok == "HiddenSingle") {
-                    techniques.push_back(&HiddenSingle);
+                    opts.techniques.push_back(&HiddenSingle);
                 } else if (*tok == "ir" || *tok == "IntersectionRemoval") {
-                    techniques.push_back(&IntersectionRemoval);
+                    opts.techniques.push_back(&IntersectionRemoval);
                 } else if (*tok == "ns" || *tok == "NakedSet") {
-                    techniques.push_back(&NakedSet);
+                    opts.techniques.push_back(&NakedSet);
                 } else if (*tok == "hs" || *tok == "HiddenSet") {
-                    techniques.push_back(&HiddenSet);
+                    opts.techniques.push_back(&HiddenSet);
                 } else if (*tok == "bf" || *tok == "BasicFish") {
-                    techniques.push_back(&BasicFish);
+                    opts.techniques.push_back(&BasicFish);
                 } else if (*tok == "xyw" || *tok == "XyWing") {
-                    techniques.push_back(&XyWing);
+                    opts.techniques.push_back(&XyWing);
                 } else if (*tok == "ur" || *tok == "UniqueRectangle") {
-                    techniques.push_back(&UniqueRectangle);
+                    opts.techniques.push_back(&UniqueRectangle);
                 } else if (*tok == "fif" || *tok == "FinnedFish") {
-                    techniques.push_back(&FinnedFish);
+                    opts.techniques.push_back(&FinnedFish);
                 } else if (*tok == "frf" || *tok == "FrankenFish") {
-                    techniques.push_back(&FrankenFish);
+                    opts.techniques.push_back(&FrankenFish);
                 } else if (*tok == "mf" || *tok == "MutantFish") {
-                    techniques.push_back(&MutantFish);
+                    opts.techniques.push_back(&MutantFish);
                 } else {
                     Log(Fatal, "Invalid argument \'%s\' given to option --techniques\n", tok->c_str());
                     usage();
