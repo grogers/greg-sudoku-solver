@@ -14,6 +14,9 @@ bool XyWing(Sudoku &sudoku)
 
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
+            if (sudoku.GetCell(i, j).NumCandidates() != 2)
+                continue;
+
             boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
                 sudoku.GetBuddies(i, j);
 
@@ -96,7 +99,7 @@ bool XyWingForCells(Sudoku &sudoku, Index_t xyRow, Index_t xyCol,
     std::vector<Index_t> changed;
     for (Index_t i = 0; i < NUM_BUDDIES; ++i) {
         if (IsBuddy(xzBuddies[i].first, xzBuddies[i].second, yzRow, yzCol) &&
-                xzBuddies[i].first != yzRow && xzBuddies[i].second != yzCol) {
+                (xzBuddies[i].first != yzRow || xzBuddies[i].second != yzCol)) {
             Cell cell = sudoku.GetCell(xzBuddies[i].first, xzBuddies[i].second);
             if (cell.ExcludeCandidate(z)) {
                 sudoku.SetCell(cell, xzBuddies[i].first, xzBuddies[i].second);

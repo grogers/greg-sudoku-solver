@@ -153,13 +153,13 @@ boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> Sudoku::GetBuddies(Index_
 bool Sudoku::IsUnique()
 {
     if (boost::logic::indeterminate(_unique)) {
-        Log(Trace, "uniqueness has not been determined yet, bifurcating to determine\n");
+        Log(Debug, "uniqueness has not been determined yet, bifurcating to determine\n");
         Sudoku sudoku(*this);
         if (Bifurcate(sudoku) == 1) {
-            Log(Trace, "determined puzzle to be unique\n");
+            Log(Debug, "determined puzzle to be unique\n");
             _unique = true;
         } else {
-            Log(Trace, "determined puzzle to be non-unique\n");
+            Log(Debug, "determined puzzle to be non-unique\n");
             _unique = false;
         }
     }
