@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# how to advance beyond x-wing in this puzzle?
+echo "000500094000007000006009203203000400060070020004000109801400500000700000350002000" | $srcdir/test_runner -t h1,h1,ir,ns,hs,bf -l i | grep "x-wing" > /dev/null

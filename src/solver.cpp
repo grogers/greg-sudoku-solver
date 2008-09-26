@@ -18,10 +18,11 @@ namespace {
         Sudoku::Format inputFormat;
         std::vector<Technique> techniques;
         bool bifurcate;
+        bool printStatistics;
 
         SolverOptions()
             : outputFormat(Sudoku::Candidates), inputFormat(Sudoku::Value),
-            bifurcate(false) {}
+            bifurcate(false), printStatistics(true) {}
     };
 
     void ConvertCmdline(list<string> &, int argc, char **argv);
@@ -36,10 +37,8 @@ int main(int argc, char **argv)
     SolverOptions opts;
     ParseOptions(cmdline, opts);
 
-    if (opts.techniques.size() == 0 && !opts.bifurcate) {
-        Log(Fatal, "You must specify at least one technique or use bifurcation!\n");
-        exit(1);
-    }
+    if (opts.techniques.size() == 0 && !opts.bifurcate)
+        Log(Warning, "you didn't specify any techniques to use, this will only check that the puzzle is already completed\n");
 
     Sudoku sudoku;
     unsigned numTotal = 0, numUnique = 0, numNonUnique = 0, numImpossible = 0;
@@ -50,14 +49,17 @@ int main(int argc, char **argv)
 
         int solutions = sudoku.Solve(opts.techniques, opts.bifurcate);
         if (solutions == 0) {
-            cout << "puzzle was impossible\n";
             ++numImpossible;
+            if (opts.printStatistics)
+                cout << "puzzle was impossible\n";
         } else if (solutions == 1) {
-            cout << "puzzle was unique\n";
             ++numUnique;
+            if (opts.printStatistics)
+                cout << "puzzle was unique\n";
         } else {
-            cout << "puzzle was non-unique\n";
             ++numNonUnique;
+            if (opts.printStatistics)
+                cout << "puzzle was non-unique\n";
         }
 
         sudoku.Output(cout, opts.outputFormat); // print the puzzle as far as it could be completed
@@ -65,7 +67,7 @@ int main(int argc, char **argv)
         ++numTotal;
     }
 
-    if (numTotal != 0) {
+    if (opts.printStatistics && numTotal != 0) {
         const int width = 10;
         cout << "Final Statistics:\n"
              << "-----------------\n" << left
@@ -76,7 +78,10 @@ int main(int argc, char **argv)
              << "Total Puzzles:      " << numTotal << '\n';
     }
 
-	return 0;
+    if (numTotal == numUnique)
+        return 0;
+    else
+        return 1;
 }
 
 namespace {
@@ -155,6 +160,8 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
             }
         } else if (*i == "--print-log-level" || *i == "-p") {
             SetShouldPrintLogLevel(true);
+        } else if (*i == "--no-statistics" || *i == "-s") {
+            opts.printStatistics = false;
         } else if (*i == "--techniques" || *i == "-t") {
             ++i;
             if (i == cmdline.end()) {
@@ -211,10 +218,11 @@ void usage()
        "        <value|cand|none>       The default is to input by values.\n\n"
        "    --log-level, -l             Set the logging level to one of:\n"
        "        <f|e|w|i|d|t>           Fatal, Error, Warning, Info, Debug, Trace\n\n"
-       "    --print-log-level, -p       Print the log level when anything is logged.\n"
+       "    --print-log-level, -p       Print the log level when anything is logged.\n\n"
        "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n\n"
        "    --quiet-bifurcation, -q     Set the log level low while bifurcating to reduce\n"
-       "                                the number of spurious messages.\n"
+       "                                the number of spurious messages.\n\n"
+       "    --no-statistics, -s         Do not print the final statistics.\n\n"
        "    --techniques, -t            Comma separated list of techniques to use, in\n"
        "        <techniques,...>        the order specified.\n"
        "                                NOTE: NakedSingle or HiddenSingle should be used\n"
@@ -232,8 +240,13 @@ void usage()
        "        fif, FinnedFish         Uses finned fish\n"
        "        frf, FrankenFish        Uses franken fish\n"
        "        mf, MutantFish          Uses mutant fish\n"
-       "                                NOTE: this solver does not distinguish finned fish\n"
-       "                                from sashimi fish\n"
+       "                                NOTE: this solver does not distinguish finned\n"
+       "                                fish from sashimi fish\n"
+       "\n"
+       "return value:\n"
+       "    0 - all input puzzles were completed uniquely (or there were no puzzles)\n"
+       "    1 - an error occurred or not all input puzzles were unique\n"
+
        ;
 
     exit(0);

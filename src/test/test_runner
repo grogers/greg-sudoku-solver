@@ -1,0 +1,3 @@
+#!/bin/sh
+
+../solver --output-format none --log-level f --no-statistics $@

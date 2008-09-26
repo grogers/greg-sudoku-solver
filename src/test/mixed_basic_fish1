@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# how to advance beyond jellyfish?
+echo "007050000000001034120300000400200080200080005010004003000003041690700000000020600" | $srcdir/test_runner -t h1,h1,ir,ns,hs,bf -l i | grep "jellyfish" > /dev/null
+
+if [ $? -ne 0 ]; then
+    exit 1;
+fi
+
+echo "007050000000001034120300000400200080200080005010004003000003041690700000000020600" | $srcdir/test_runner -t h1,h1,ir,ns,hs,bf -l i | grep "swordfish" > /dev/null

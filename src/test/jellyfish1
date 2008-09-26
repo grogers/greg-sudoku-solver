@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# how to advance beyond the jellyfish in this puzzle?
+echo "003100005850400000006050009025006080000000000070800430500020600000008014100003500" | $srcdir/test_runner -t h1,h1,ir,ns,hs,bf -l i | grep "jellyfish" > /dev/null

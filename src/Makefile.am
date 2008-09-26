@@ -6,5 +6,6 @@ solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp Cell.cpp \
 	Techniques/XyWing.cpp Techniques/UniqueRectangle.cpp \
 	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp Techniques/LockedSet.hpp
 
-
 # Techniques should probably be made into a library...
+
+SUBDIRS = test
