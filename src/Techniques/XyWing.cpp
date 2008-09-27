@@ -22,6 +22,8 @@ bool XyWing(Sudoku &sudoku)
 
             boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES>::const_iterator it0, it1;
             for (it0 = buddies.begin(); it0 != buddies.end(); ++it0) {
+                if (sudoku.GetCell(it0->first, it0->second).NumCandidates() != 2)
+                    continue;
                 for (it1 = it0 + 1; it1 < buddies.end(); ++it1) {
                     if (XyWingForCells(sudoku, i, j,
                                 it0->first, it0->second, it1->first,

@@ -23,6 +23,7 @@ bool FrankenFish(Sudoku &);
 bool MutantFish(Sudoku &);
 
 bool XyWing(Sudoku &);
+bool XyzWing(Sudoku &);
 
 bool UniqueRectangle(Sudoku &);
 

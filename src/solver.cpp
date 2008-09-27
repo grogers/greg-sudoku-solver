@@ -187,6 +187,8 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                     opts.techniques.push_back(&BasicFish);
                 } else if (*tok == "xyw" || *tok == "XyWing") {
                     opts.techniques.push_back(&XyWing);
+                } else if (*tok == "xyzw" || *tok == "XyzWing") {
+                    opts.techniques.push_back(&XyzWing);
                 } else if (*tok == "ur" || *tok == "UniqueRectangle") {
                     opts.techniques.push_back(&UniqueRectangle);
                 } else if (*tok == "fif" || *tok == "FinnedFish") {
@@ -236,6 +238,7 @@ void usage()
        "        hs, HiddenSet           Uses hidden sets\n"
        "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
        "        xyw, XyWing             Uses xy-wings\n"
+       "        xyzw, XyzWing           Uses xyz-wings\n"
        "        ur, UniqueRectangle     Uses unique rectangles\n"
        "        fif, FinnedFish         Uses finned fish\n"
        "        frf, FrankenFish        Uses franken fish\n"

@@ -47,7 +47,7 @@ am_solver_OBJECTS = Logging.$(OBJEXT) solver.$(OBJEXT) \
 	NakedSingle.$(OBJEXT) HiddenSingle.$(OBJEXT) \
 	IntersectionRemoval.$(OBJEXT) LockedSet.$(OBJEXT) \
 	Fish.$(OBJEXT) BasicFish.$(OBJEXT) XyWing.$(OBJEXT) \
-	UniqueRectangle.$(OBJEXT)
+	XyzWing.$(OBJEXT) UniqueRectangle.$(OBJEXT)
 solver_OBJECTS = $(am_solver_OBJECTS)
 solver_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -162,7 +162,7 @@ solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp Cell.cpp \
 	Techniques/Bifurcate.cpp Techniques/NakedSingle.cpp \
 	Techniques/HiddenSingle.cpp Techniques/IntersectionRemoval.cpp \
 	Techniques/LockedSet.cpp Techniques/Fish.cpp Techniques/BasicFish.cpp \
-	Techniques/XyWing.cpp Techniques/UniqueRectangle.cpp \
+	Techniques/XyWing.cpp Techniques/XyzWing.cpp Techniques/UniqueRectangle.cpp \
 	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp Techniques/LockedSet.hpp
 
 
@@ -246,6 +246,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Sudoku.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/UniqueRectangle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XyWing.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XyzWing.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/solver.Po@am__quote@
 
 .cpp.o:
@@ -373,6 +374,20 @@ XyWing.obj: Techniques/XyWing.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Techniques/XyWing.cpp' object='XyWing.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XyWing.obj `if test -f 'Techniques/XyWing.cpp'; then $(CYGPATH_W) 'Techniques/XyWing.cpp'; else $(CYGPATH_W) '$(srcdir)/Techniques/XyWing.cpp'; fi`
+
+XyzWing.o: Techniques/XyzWing.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT XyzWing.o -MD -MP -MF $(DEPDIR)/XyzWing.Tpo -c -o XyzWing.o `test -f 'Techniques/XyzWing.cpp' || echo '$(srcdir)/'`Techniques/XyzWing.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/XyzWing.Tpo $(DEPDIR)/XyzWing.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Techniques/XyzWing.cpp' object='XyzWing.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XyzWing.o `test -f 'Techniques/XyzWing.cpp' || echo '$(srcdir)/'`Techniques/XyzWing.cpp
+
+XyzWing.obj: Techniques/XyzWing.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT XyzWing.obj -MD -MP -MF $(DEPDIR)/XyzWing.Tpo -c -o XyzWing.obj `if test -f 'Techniques/XyzWing.cpp'; then $(CYGPATH_W) 'Techniques/XyzWing.cpp'; else $(CYGPATH_W) '$(srcdir)/Techniques/XyzWing.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/XyzWing.Tpo $(DEPDIR)/XyzWing.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Techniques/XyzWing.cpp' object='XyzWing.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XyzWing.obj `if test -f 'Techniques/XyzWing.cpp'; then $(CYGPATH_W) 'Techniques/XyzWing.cpp'; else $(CYGPATH_W) '$(srcdir)/Techniques/XyzWing.cpp'; fi`
 
 UniqueRectangle.o: Techniques/UniqueRectangle.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT UniqueRectangle.o -MD -MP -MF $(DEPDIR)/UniqueRectangle.Tpo -c -o UniqueRectangle.o `test -f 'Techniques/UniqueRectangle.cpp' || echo '$(srcdir)/'`Techniques/UniqueRectangle.cpp
