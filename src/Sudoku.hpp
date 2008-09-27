@@ -9,6 +9,7 @@
 #include <iosfwd>
 #include <utility>
 #include <boost/logic/tribool.hpp>
+#include <boost/scoped_ptr.hpp>
 
 typedef boost::array<Cell, 9> House;
 
@@ -61,6 +62,7 @@ class Sudoku
         boost::array<boost::array<Cell, 9>, 9> _board;
         // if something is unique, special techniques can be used
         boost::logic::tribool _unique;
+        boost::scoped_ptr<boost::array<boost::array<Cell, 9>, 9> > _uniquely_solved_board;
 };
 
 bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2);

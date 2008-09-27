@@ -158,6 +158,8 @@ bool Sudoku::IsUnique()
         if (Bifurcate(sudoku) == 1) {
             Log(Debug, "determined puzzle to be unique\n");
             _unique = true;
+            _uniquely_solved_board.reset(new
+                    boost::array<boost::array<Cell, 9>, 9>(sudoku._board));
         } else {
             Log(Debug, "determined puzzle to be non-unique\n");
             _unique = false;
@@ -188,10 +190,17 @@ unsigned Sudoku::Solve(const std::vector<Technique> &techniques, bool useBifurca
         if (TryAllTechniques(*this, techniques))
             continue;
 
-        if (useBifurcation)
-            return Bifurcate(*this);
-        else
+        if (useBifurcation) {
+            if (_unique) {
+                Log(Info, "using cached copy of the puzzle found when testing for uniqueness\n");
+                _board = *_uniquely_solved_board;
+                return 1;
+            } else {
+                return Bifurcate(*this);
+            }
+        } else {
             return 0;
+        }
     }
 
     if (IsSolved())
