@@ -8,7 +8,8 @@ dist_check_SCRIPTS = test_runner \
 	swordfish2 jellyfish1 mixed_basic_fish1 mixed_basic_fish2 xywing1 xywing2 \
 	xyzwing1 remote_pairs1 remote_pairs2 unique_rectangle1 unique_rectangle2 \
 	non_unique1 non_unique2 non_unique3 non_unique4 no_solution1 no_solution2 \
-	no_solution3 finned_xwing1
+	no_solution3 finned_xwing1 sashimi_xwing1 sashimi_xwing2 finned_swordfish1 \
+	sashimi_swordfish1 finned_jellyfish1
 
 
 TESTS = completed naked_singles1 hidden_singles1 naked_singles2 mixed_singles1 \
@@ -20,4 +21,5 @@ TESTS = completed naked_singles1 hidden_singles1 naked_singles2 mixed_singles1 \
 	swordfish2 jellyfish1 mixed_basic_fish1 mixed_basic_fish2 xywing1 xywing2 \
 	xyzwing1 remote_pairs1 remote_pairs2 unique_rectangle1 unique_rectangle2 \
 	non_unique1 non_unique2 non_unique3 non_unique4 no_solution1 no_solution2 \
-	no_solution3 finned_xwing1
+	no_solution3 finned_xwing1 sashimi_xwing1 sashimi_xwing2 finned_swordfish1 \
+	sashimi_swordfish1 finned_jellyfish1
