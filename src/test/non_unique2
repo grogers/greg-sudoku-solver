@@ -1,0 +1,10 @@
+#!/bin/sh
+
+echo "000000000000000000000000000000000000000010000000000000000000000000000000000000000" | $srcdir/test_runner -t n1,h1,ir,ns,hs,bf,xyw,xyzw,rp,ur -b
+
+if [[ $? -eq 0 ]]; then
+    exit 1
+else
+    exit 0
+fi
+
