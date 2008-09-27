@@ -24,6 +24,7 @@ bool MutantFish(Sudoku &);
 
 bool XyWing(Sudoku &);
 bool XyzWing(Sudoku &);
+bool RemotePair(Sudoku &);
 
 bool UniqueRectangle(Sudoku &);
 

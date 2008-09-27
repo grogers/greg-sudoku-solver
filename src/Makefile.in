@@ -47,7 +47,8 @@ am_solver_OBJECTS = Logging.$(OBJEXT) solver.$(OBJEXT) \
 	NakedSingle.$(OBJEXT) HiddenSingle.$(OBJEXT) \
 	IntersectionRemoval.$(OBJEXT) LockedSet.$(OBJEXT) \
 	Fish.$(OBJEXT) BasicFish.$(OBJEXT) XyWing.$(OBJEXT) \
-	XyzWing.$(OBJEXT) UniqueRectangle.$(OBJEXT)
+	XyzWing.$(OBJEXT) UniqueRectangle.$(OBJEXT) \
+	RemotePair.$(OBJEXT)
 solver_OBJECTS = $(am_solver_OBJECTS)
 solver_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -162,7 +163,8 @@ solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp Cell.cpp \
 	Techniques/Bifurcate.cpp Techniques/NakedSingle.cpp \
 	Techniques/HiddenSingle.cpp Techniques/IntersectionRemoval.cpp \
 	Techniques/LockedSet.cpp Techniques/Fish.cpp Techniques/BasicFish.cpp \
-	Techniques/XyWing.cpp Techniques/XyzWing.cpp Techniques/UniqueRectangle.cpp \
+	Techniques/XyWing.cpp Techniques/XyzWing.cpp \
+	Techniques/UniqueRectangle.cpp Techniques/RemotePair.cpp \
 	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp Techniques/LockedSet.hpp
 
 
@@ -243,6 +245,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LockedSet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Logging.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/NakedSingle.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RemotePair.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Sudoku.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/UniqueRectangle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XyWing.Po@am__quote@
@@ -402,6 +405,20 @@ UniqueRectangle.obj: Techniques/UniqueRectangle.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Techniques/UniqueRectangle.cpp' object='UniqueRectangle.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o UniqueRectangle.obj `if test -f 'Techniques/UniqueRectangle.cpp'; then $(CYGPATH_W) 'Techniques/UniqueRectangle.cpp'; else $(CYGPATH_W) '$(srcdir)/Techniques/UniqueRectangle.cpp'; fi`
+
+RemotePair.o: Techniques/RemotePair.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RemotePair.o -MD -MP -MF $(DEPDIR)/RemotePair.Tpo -c -o RemotePair.o `test -f 'Techniques/RemotePair.cpp' || echo '$(srcdir)/'`Techniques/RemotePair.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/RemotePair.Tpo $(DEPDIR)/RemotePair.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Techniques/RemotePair.cpp' object='RemotePair.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RemotePair.o `test -f 'Techniques/RemotePair.cpp' || echo '$(srcdir)/'`Techniques/RemotePair.cpp
+
+RemotePair.obj: Techniques/RemotePair.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RemotePair.obj -MD -MP -MF $(DEPDIR)/RemotePair.Tpo -c -o RemotePair.obj `if test -f 'Techniques/RemotePair.cpp'; then $(CYGPATH_W) 'Techniques/RemotePair.cpp'; else $(CYGPATH_W) '$(srcdir)/Techniques/RemotePair.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/RemotePair.Tpo $(DEPDIR)/RemotePair.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Techniques/RemotePair.cpp' object='RemotePair.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RemotePair.obj `if test -f 'Techniques/RemotePair.cpp'; then $(CYGPATH_W) 'Techniques/RemotePair.cpp'; else $(CYGPATH_W) '$(srcdir)/Techniques/RemotePair.cpp'; fi`
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.

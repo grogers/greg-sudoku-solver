@@ -189,6 +189,8 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                     opts.techniques.push_back(&XyWing);
                 } else if (*tok == "xyzw" || *tok == "XyzWing") {
                     opts.techniques.push_back(&XyzWing);
+                } else if (*tok == "rp" || *tok == "RemotePair") {
+                    opts.techniques.push_back(&RemotePair);
                 } else if (*tok == "ur" || *tok == "UniqueRectangle") {
                     opts.techniques.push_back(&UniqueRectangle);
                 } else if (*tok == "fif" || *tok == "FinnedFish") {
@@ -233,12 +235,13 @@ void usage()
        "    Techniques:\n"
        "        n1, NakedSingle         Uses naked singles\n"
        "        h1, HiddenSingle        Uses hidden singles\n"
-       "        ir, IntersectionRemoval Uses intersections between boxes and lines\n"
+       "        ir, IntersectionRemoval Uses intersections between lines and boxes\n"
        "        ns. NakedSet            Uses naked sets\n"
        "        hs, HiddenSet           Uses hidden sets\n"
        "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
        "        xyw, XyWing             Uses xy-wings\n"
        "        xyzw, XyzWing           Uses xyz-wings\n"
+       "        rp, RemotePair          Uses remote pairs\n"
        "        ur, UniqueRectangle     Uses unique rectangles\n"
        "        fif, FinnedFish         Uses finned fish\n"
        "        frf, FrankenFish        Uses franken fish\n"

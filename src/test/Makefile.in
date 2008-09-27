@@ -130,7 +130,7 @@ dist_check_SCRIPTS = test_runner \
 	naked_quad1 naked_quad2 hidden_pair1 hidden_pair2 hidden_pair3 \
 	hidden_triple1 hidden_triple2 mixed_sets1 xwing1 xwing2 swordfish1 \
 	swordfish2 jellyfish1 mixed_basic_fish1 mixed_basic_fish2 xywing1 xywing2 \
-	xyzwing1
+	xyzwing1 remote_pairs1 remote_pairs2
 
 TESTS = completed naked_singles1 hidden_singles1 naked_singles2 mixed_singles1 \
 	mixed_singles2 line_box_intersection1 line_box_intersection2 \
@@ -139,7 +139,7 @@ TESTS = completed naked_singles1 hidden_singles1 naked_singles2 mixed_singles1 \
 	naked_quad1 naked_quad2 hidden_pair1 hidden_pair2 hidden_pair3 \
 	hidden_triple1 hidden_triple2 mixed_sets1 xwing1 xwing2 swordfish1 \
 	swordfish2 jellyfish1 mixed_basic_fish1 mixed_basic_fish2 xywing1 xywing2 \
-	xyzwing1
+	xyzwing1 remote_pairs1 remote_pairs2
 
 all: all-am
 
