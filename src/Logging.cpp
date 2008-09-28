@@ -62,31 +62,3 @@ int Log(LogLevel lvl, const char *fmt, ...)
 
     return ret;
 }
-
-int StarryLog(LogLevel lvl, unsigned numStarLines, const char *fmt, ...)
-{
-    if (level < lvl)
-        return 0;
-
-    va_list va;
-
-    for (unsigned i = 0; i < numStarLines; ++i) {
-        for (unsigned j = 0; j <= i; ++j)
-            printf("*");
-        printf("\n");
-    }
-
-    va_start(va, fmt);
-    if (shouldPrintLogLevel)
-        printf("%s: ", GetLogLevelName(lvl));
-    int ret = vprintf(fmt, va);
-    va_end(va);
-
-    for (unsigned i = numStarLines; i > 0; --i) {
-        for (unsigned j = i; j > 0; --j)
-            printf("*");
-        printf("\n");
-    }
-
-    return ret;
-}

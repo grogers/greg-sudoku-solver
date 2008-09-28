@@ -30,7 +30,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = solver$(EXEEXT)
+bin_PROGRAMS = solver$(EXEEXT) generator$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -42,9 +42,14 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_solver_OBJECTS = Logging.$(OBJEXT) solver.$(OBJEXT) \
-	Sudoku.$(OBJEXT) Cell.$(OBJEXT)
+am__objects_1 = Logging.$(OBJEXT) Sudoku.$(OBJEXT) Cell.$(OBJEXT)
+am_generator_OBJECTS = generator.$(OBJEXT) $(am__objects_1)
+generator_OBJECTS = $(am_generator_OBJECTS)
+generator_LDADD = $(LDADD)
+generator_DEPENDENCIES = techniques/libtechniques.a
+am_solver_OBJECTS = solver.$(OBJEXT) $(am__objects_1)
 solver_OBJECTS = $(am_solver_OBJECTS)
+solver_LDADD = $(LDADD)
 solver_DEPENDENCIES = techniques/libtechniques.a
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -58,8 +63,7 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(solver_SOURCES)
-DIST_SOURCES = $(solver_SOURCES)
+DIST_SOURCES = $(generator_SOURCES) $(solver_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -156,10 +160,12 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = test techniques
-solver_SOURCES = Logging.cpp solver.cpp Sudoku.cpp Cell.cpp \
+SOURCES = Logging.cpp Sudoku.cpp Cell.cpp \
 	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp
 
-solver_LDADD = techniques/libtechniques.a
+LDADD = techniques/libtechniques.a
+solver_SOURCES = solver.cpp ${SOURCES}
+generator_SOURCES = generator.cpp ${SOURCES}
 all: all-recursive
 
 .SUFFIXES:
@@ -216,6 +222,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+generator$(EXEEXT): $(generator_OBJECTS) $(generator_DEPENDENCIES) 
+	@rm -f generator$(EXEEXT)
+	$(CXXLINK) $(generator_OBJECTS) $(generator_LDADD) $(LIBS)
 solver$(EXEEXT): $(solver_OBJECTS) $(solver_DEPENDENCIES) 
 	@rm -f solver$(EXEEXT)
 	$(CXXLINK) $(solver_OBJECTS) $(solver_LDADD) $(LIBS)
@@ -229,6 +238,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cell.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Logging.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Sudoku.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/solver.Po@am__quote@
 
 .cpp.o:

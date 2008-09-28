@@ -13,6 +13,7 @@ namespace {
     boost::array<Index_t, 9> GetMaxNumCandidatesAllColumns(const Sudoku &);
     void PrintLineSeparator(const boost::array<Index_t, 9> &, std::ostream &);
     void OutputByCandidates(const Sudoku &, std::ostream &);
+    void OutputSingleLine(const Sudoku &, std::ostream &);
     bool InputByValue(Sudoku &, std::istream &);
     bool InputByCandidates(Sudoku &, std::istream &);
     bool IsValueInHouse(const House &, Index_t);
@@ -25,7 +26,7 @@ namespace {
 Sudoku &Sudoku::operator=(const Sudoku &x)
 {
     _board = x._board;
-    _unique = x._unique;
+    _unique = boost::logic::indeterminate;
     return *this;
 }
 
@@ -258,6 +259,9 @@ void Sudoku::Output(std::ostream &out, Format fmt) const
         case Candidates:
             OutputByCandidates(*this, out);
             return;
+        case SingleLine:
+            OutputSingleLine(*this, out);
+            return;
         default:
             return;
     }
@@ -270,11 +274,10 @@ bool Sudoku::Input(std::istream &in, Format fmt)
 {
     switch (fmt) {
         case Value:
+        case SingleLine:
             return InputByValue(*this, in);
         case Candidates:
             return InputByCandidates(*this, in);
-        case None:
-            return false;
         default:
             return false;
     }
@@ -303,6 +306,22 @@ void OutputByValue(const Sudoku &sudoku, std::ostream &out)
 
         out << '\n';
     }
+}
+
+void OutputSingleLine(const Sudoku &sudoku, std::ostream &out)
+{
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            Cell cell = sudoku.GetCell(i, j);
+
+            if (cell.HasValue()) {
+                out << cell.GetValue();
+            } else {
+                out << '.';
+            }
+        }
+    }
+    out << '\n';
 }
 
 Index_t GetMaxNumCandidatesInColumn(const Sudoku &sudoku, Index_t col)

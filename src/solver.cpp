@@ -98,8 +98,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
         if (*i == "--help" || *i == "-h") {
             usage();
         } else if (*i == "--output-format" || *i == "-o") {
-            ++i;
-            if (i == cmdline.end()) {
+            if (++i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --output-format\n");
                 exit(1);
             }
@@ -115,8 +114,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                 exit(1);
             }
         } else if (*i == "--input-format" || *i == "-i") {
-            ++i;
-            if (i == cmdline.end()) {
+            if (++i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --input-format\n");
                 exit(1);
             }
@@ -136,8 +134,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
         } else if (*i == "--quiet-bifurcation" || *i == "-q") {
             SetShouldQuietlyBifurcate(true);
         } else if (*i == "--log-level" || *i == "-l") {
-            ++i;
-            if (i == cmdline.end()) {
+            if (++i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --log-level\n");
                 exit(1);
             }
@@ -155,7 +152,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
             } else if (*i == "t" || *i == "Trace") {
                 SetLogLevel(Trace);
             } else {
-                Log(Fatal, "Invalid output format \'%s\' specified\n", i->c_str());
+                Log(Fatal, "Invalid log level \'%s\' specified\n", i->c_str());
                 usage();
             }
         } else if (*i == "--print-log-level" || *i == "-p") {
@@ -163,8 +160,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
         } else if (*i == "--no-statistics" || *i == "-s") {
             opts.printStatistics = false;
         } else if (*i == "--techniques" || *i == "-t") {
-            ++i;
-            if (i == cmdline.end()) {
+            if (++i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --techniques\n");
                 exit(1);
             }

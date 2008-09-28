@@ -3,6 +3,7 @@
 
 enum LogLevel
 {
+    Never,
     Fatal,
     Error,
     Warning,
@@ -20,6 +21,5 @@ void SetShouldQuietlyBifurcate(bool);
 const char *GetLogLevelName(LogLevel);
 
 int Log(LogLevel, const char *, ...);
-int StarryLog(LogLevel, unsigned starryness, const char *, ...);
 
 #endif

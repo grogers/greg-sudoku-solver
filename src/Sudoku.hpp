@@ -51,6 +51,7 @@ class Sudoku
         {
             Value,
             Candidates,
+            SingleLine,
             None
         };
 
