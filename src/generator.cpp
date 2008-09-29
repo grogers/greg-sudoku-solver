@@ -10,12 +10,14 @@
 #include <iomanip>
 #include <iostream>
 #include <climits>
+#include <functional>
 #include <boost/tokenizer.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/random.hpp>
 
 
 using namespace std;
+using namespace boost;
 
 namespace {
 
@@ -37,6 +39,14 @@ namespace {
     Sudoku GenerateFilledSudoku(boost::mt19937 &);
     void PruneExtraCellsFromSudoku(Sudoku &, boost::mt19937 &);
     void CrossHatchAll(Sudoku &);
+    struct RngMaker : std::unary_function<Index_t, Index_t> {
+        Index_t operator()(Index_t i) {
+            return Random(0, i, state);
+        }
+        RngMaker(boost::mt19937 &state) : state(state) {}
+    private:
+        boost::mt19937 &state;
+    };
 }
 
 int main(int argc, char **argv)
@@ -110,9 +120,10 @@ void usage()
     exit(0);
 }
 
+// returns numbers in the range [min, max)
 Index_t Random(Index_t min, Index_t max, boost::mt19937 &state)
 {
-    boost::uniform_int<> rng(min, max);
+    boost::uniform_int<> rng(min, max - 1);
     return rng(state);
 }
 
@@ -126,66 +137,70 @@ Sudoku GenerateSudoku(boost::mt19937 &state)
 Sudoku GenerateFilledSudoku(boost::mt19937 &state)
 {
     Sudoku ret;
-
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
             std::vector<Index_t> candidates =
                 CandidatesForCell(ret.GetCell(i, j));
-            Index_t rand = Random(0, candidates.size() - 1, state);
-            Sudoku tmp(ret);
-            Cell cell(candidates[rand]);
-            tmp.SetCell(cell, i, j);
-            tmp.CrossHatch(i, j);
 
-            // if added cell keeps puzzle unique
-            if (tmp.Solve(techniques, true) != 0) {
-                ret.SetCell(cell, i, j);
+            if (candidates.size() == 1) {
+                ret.SetCell(Cell(candidates.front()), i, j);
                 ret.CrossHatch(i, j);
             } else {
-                // fall back to trying to add all the digits until one is found
-                // that keeps the puzzle unique
-                for (Index_t k = 0; k < candidates.size(); ++k) {
-                    Sudoku s(ret);
-                    Cell c(candidates[k]);
-                    s.SetCell(c, i, j);
-                    s.CrossHatch(i, j);
-                    if (s.Solve(techniques, true) != 0) {
-                        ret.SetCell(c, i, j);
-                        ret.CrossHatch(i, j);
-                        break;
+                Index_t rand = Random(0, candidates.size(), state);
+                Sudoku tmp(ret);
+                Cell cell(candidates[rand]);
+                tmp.SetCell(cell, i, j);
+                tmp.CrossHatch(i, j);
+
+                Index_t numSolutions = tmp.Solve(techniques, true);
+
+                if (numSolutions == 1) {
+                    return tmp;
+                } else if (numSolutions > 1) {
+                    ret.SetCell(cell, i, j);
+                    ret.CrossHatch(i, j);
+                } else {
+                    // fall back to trying to add all the digits until one is
+                    // found that keeps the puzzle unique
+                    for (Index_t k = 0; k < candidates.size(); ++k) {
+                        Sudoku s(ret);
+                        Cell c(candidates[k]);
+                        s.SetCell(c, i, j);
+                        s.CrossHatch(i, j);
+                        if (s.Solve(techniques, true) != 0) {
+                            ret.SetCell(c, i, j);
+                            ret.CrossHatch(i, j);
+                            break;
+                        }
                     }
                 }
+                assert(ret.GetCell(i, j).HasValue());
             }
-            assert(ret.GetCell(i, j).HasValue());
         }
     }
-
     return ret;
 }
 
 void PruneExtraCellsFromSudoku(Sudoku &sudoku, boost::mt19937 &state)
 {
-    bool changed;
-    do {
-        changed = false;
-
-        for (Index_t i = 0; i < 9; ++i) {
-            for (Index_t j = 0; j < 9; ++j) {
-                if (!sudoku.GetCell(i, j).HasValue())
-                    continue;
-
-                Sudoku tmp(sudoku);
-
-                tmp.SetCell(Cell(), i, j);
-                CrossHatchAll(tmp);
-
-                if (tmp.Solve(techniques, true) == 1) {
-                    changed = true;
-                    sudoku.SetCell(Cell(), i, j);
-                }
-            }
+    std::vector<std::pair<Index_t, Index_t> > cells(81);
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            cells.push_back(std::make_pair(i, j));
         }
-    } while (changed);
+    }
+
+    RngMaker rand(state);
+    std::random_shuffle(cells.begin(), cells.end(), rand);
+
+    for (Index_t i = 0; i < cells.size(); ++i) {
+        Sudoku tmp(sudoku);
+        tmp.SetCell(Cell(), cells[i].first, cells[i].second);
+        CrossHatchAll(tmp);
+
+        if (tmp.Solve(techniques, true) == 1)
+            sudoku.SetCell(Cell(), cells[i].first, cells[i].second);
+    }
 }
 
 void CrossHatchAll(Sudoku &sudoku)
