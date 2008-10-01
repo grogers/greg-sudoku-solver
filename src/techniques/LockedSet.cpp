@@ -8,12 +8,14 @@
 namespace {
 // pair is (index, value)
 typedef std::vector<std::pair<Index_t, Index_t> > PairList;
-bool NakedSetInHouse(House &, PairList &set, PairList &changed);
+bool NakedSetWithOrder(Sudoku &, Index_t);
+bool NakedSetInHouse(House &, PairList &set, PairList &changed, Index_t order);
 std::vector<Index_t> IndicesOfPossibleNakedSet(const House &, Index_t order);
 Index_t MaxSizeOfSetInHouse(const House &);
 bool NakedSetInHouseWithIndices(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
 
-bool HiddenSetInHouse(House &, PairList &set, PairList &changed);
+bool HiddenSetWithOrder(Sudoku &, Index_t);
+bool HiddenSetInHouse(House &, PairList &set, PairList &changed, Index_t order);
 std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &, Index_t order);
 bool HiddenSetInHouseWithValues(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
 
@@ -23,63 +25,36 @@ void LogChangesForBox(Index_t box, const PairList &set, const PairList &changed,
 const char *OrderToString(Index_t);
 }
 
-bool NakedSet(Sudoku &sudoku)
+bool NakedPair(Sudoku &sudoku)
 {
-    Log(Trace, "searching for naked sets\n");
-    PairList set, changed; // used only for logging
-    for (Index_t i = 0; i < 9; ++i) {
-        House house = sudoku.GetRow(i);
-        if (NakedSetInHouse(house, set, changed)) {
-            LogChangesForRow(i, set, changed, "naked");
-            sudoku.SetRow(house, i);
-            return true;
-        }
-
-        house = sudoku.GetCol(i);
-        if (NakedSetInHouse(house, set, changed)) {
-            LogChangesForCol(i, set, changed, "naked");
-            sudoku.SetCol(house, i);
-            return true;
-        }
-
-        house = sudoku.GetBox(i);
-        if (NakedSetInHouse(house, set, changed)) {
-            LogChangesForBox(i, set, changed, "naked");
-            sudoku.SetBox(house, i);
-            return true;
-        }
-    }
-    return false;
+    return NakedSetWithOrder(sudoku, 2);
 }
 
-bool HiddenSet(Sudoku &sudoku)
+bool NakedTriple(Sudoku &sudoku)
 {
-    Log(Trace, "searching for hidden sets\n");
-    PairList set, changed; // used only for logging
-    for (Index_t i = 0; i < 9; ++i) {
-        House house = sudoku.GetRow(i);
-        if (HiddenSetInHouse(house, set, changed)) {
-            LogChangesForRow(i, set, changed, "hidden");
-            sudoku.SetRow(house, i);
-            return true;
-        }
-
-        house = sudoku.GetCol(i);
-        if (HiddenSetInHouse(house, set, changed)) {
-            LogChangesForCol(i, set, changed, "hidden");
-            sudoku.SetCol(house, i);
-            return true;
-        }
-
-        house = sudoku.GetBox(i);
-        if (HiddenSetInHouse(house, set, changed)) {
-            LogChangesForBox(i, set, changed, "hidden");
-            sudoku.SetBox(house, i);
-            return true;
-        }
-    }
-    return false;
+    return NakedSetWithOrder(sudoku, 3);
 }
+
+bool NakedQuad(Sudoku &sudoku)
+{
+    return NakedSetWithOrder(sudoku, 4);
+}
+
+bool HiddenPair(Sudoku &sudoku)
+{
+    return HiddenSetWithOrder(sudoku, 2);
+}
+
+bool HiddenTriple(Sudoku &sudoku)
+{
+    return HiddenSetWithOrder(sudoku, 3);
+}
+
+bool HiddenQuad(Sudoku &sudoku)
+{
+    return HiddenSetWithOrder(sudoku, 4);
+}
+
 
 bool GetNewIndicesToVisit(std::vector<Index_t> &indices, Index_t n)
 {
@@ -114,6 +89,64 @@ Index_t NumTimesValueOpenInHouse(const House &house, Index_t value)
 
 namespace {
 
+bool NakedSetWithOrder(Sudoku &sudoku, Index_t order)
+{
+    Log(Trace, "searching for naked sets\n");
+    PairList set, changed; // used only for logging
+    for (Index_t i = 0; i < 9; ++i) {
+        House house = sudoku.GetRow(i);
+        if (NakedSetInHouse(house, set, changed, order)) {
+            LogChangesForRow(i, set, changed, "naked");
+            sudoku.SetRow(house, i);
+            return true;
+        }
+
+        house = sudoku.GetCol(i);
+        if (NakedSetInHouse(house, set, changed, order)) {
+            LogChangesForCol(i, set, changed, "naked");
+            sudoku.SetCol(house, i);
+            return true;
+        }
+
+        house = sudoku.GetBox(i);
+        if (NakedSetInHouse(house, set, changed, order)) {
+            LogChangesForBox(i, set, changed, "naked");
+            sudoku.SetBox(house, i);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HiddenSetWithOrder(Sudoku &sudoku, Index_t order)
+{
+    Log(Trace, "searching for hidden sets\n");
+    PairList set, changed; // used only for logging
+    for (Index_t i = 0; i < 9; ++i) {
+        House house = sudoku.GetRow(i);
+        if (HiddenSetInHouse(house, set, changed, order)) {
+            LogChangesForRow(i, set, changed, "hidden");
+            sudoku.SetRow(house, i);
+            return true;
+        }
+
+        house = sudoku.GetCol(i);
+        if (HiddenSetInHouse(house, set, changed, order)) {
+            LogChangesForCol(i, set, changed, "hidden");
+            sudoku.SetCol(house, i);
+            return true;
+        }
+
+        house = sudoku.GetBox(i);
+        if (HiddenSetInHouse(house, set, changed, order)) {
+            LogChangesForBox(i, set, changed, "hidden");
+            sudoku.SetBox(house, i);
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<Index_t> IndicesOfPossibleNakedSet(const House &house, Index_t order)
 {
     std::vector<Index_t> ret;
@@ -145,27 +178,28 @@ std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &house, Index_t order
     return ret;
 }
 
-bool NakedSetInHouse(House &house, PairList &set, PairList &changed)
+bool NakedSetInHouse(House &house, PairList &set, PairList &changed, Index_t order)
 {
-    Index_t max = MaxSizeOfSetInHouse(house);
-    for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> indices = IndicesOfPossibleNakedSet(house, order);
-        if (indices.size() < order)
-            continue;
+    if (MaxSizeOfSetInHouse(house) < order)
+        return false;
 
-        std::vector<Index_t> indicesToVisit(order);
+    std::vector<Index_t> indices = IndicesOfPossibleNakedSet(house, order);
+    if (indices.size() < order)
+        return false;
+
+    std::vector<Index_t> indicesToVisit(order);
+    for (Index_t i = 0; i < order; ++i)
+        indicesToVisit[i] = i;
+
+    do {
+        boost::array<Index_t, 4> indexIntoHouse;
         for (Index_t i = 0; i < order; ++i)
-            indicesToVisit[i] = i;
+            indexIntoHouse[i] = indices[indicesToVisit[i]];
 
-        do {
-            boost::array<Index_t, 4> indexIntoHouse;
-            for (Index_t i = 0; i < order; ++i)
-                indexIntoHouse[i] = indices[indicesToVisit[i]];
+        if (NakedSetInHouseWithIndices(house, indexIntoHouse, order, set, changed))
+            return true;
+    } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
 
-            if (NakedSetInHouseWithIndices(house, indexIntoHouse, order, set, changed))
-                return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
-    }
     return false;
 }
 
@@ -218,27 +252,28 @@ bool NakedSetInHouseWithIndices(House &house, const boost::array<Index_t, 4> &in
     return ret;
 }
 
-bool HiddenSetInHouse(House &house, PairList &set, PairList &changed)
+bool HiddenSetInHouse(House &house, PairList &set, PairList &changed, Index_t order)
 {
-    Index_t max = MaxSizeOfSetInHouse(house);
-    for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> values = ValuesOfPossibleHiddenSet(house, order);
-        if (values.size() < order)
-            continue;
+    if (MaxSizeOfSetInHouse(house) < order)
+        return false;
 
-        std::vector<Index_t> valuesToVisit(order);
+    std::vector<Index_t> values = ValuesOfPossibleHiddenSet(house, order);
+    if (values.size() < order)
+        return false;
+
+    std::vector<Index_t> valuesToVisit(order);
+    for (Index_t i = 0; i < order; ++i)
+        valuesToVisit[i] = i;
+
+    do {
+        boost::array<Index_t, 4> valuesInSet;
         for (Index_t i = 0; i < order; ++i)
-            valuesToVisit[i] = i;
+            valuesInSet[i] = values[valuesToVisit[i]];
 
-        do {
-            boost::array<Index_t, 4> valuesInSet;
-            for (Index_t i = 0; i < order; ++i)
-                valuesInSet[i] = values[valuesToVisit[i]];
+        if (HiddenSetInHouseWithValues(house, valuesInSet, order, set, changed))
+            return true;
+    } while (GetNewIndicesToVisit(valuesToVisit, values.size()));
 
-            if (HiddenSetInHouseWithValues(house, valuesInSet, order, set, changed))
-                return true;
-        } while (GetNewIndicesToVisit(valuesToVisit, values.size()));
-    }
     return false;
 }
 

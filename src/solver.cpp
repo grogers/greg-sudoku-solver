@@ -169,31 +169,45 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
             typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
             tokenizer tokens(*i, sep);
             for (tokenizer::iterator tok = tokens.begin(); tok != tokens.end(); ++tok) {
-                if (*tok == "n1" || *tok == "NakedSingle") {
+                if (*tok == "n1") {
                     opts.techniques.push_back(&NakedSingle);
-                } else if (*tok == "h1" || *tok == "HiddenSingle") {
+                } else if (*tok == "n2") {
+                    opts.techniques.push_back(&NakedPair);
+                } else if (*tok == "n3") {
+                    opts.techniques.push_back(&NakedTriple);
+                } else if (*tok == "n4") {
+                    opts.techniques.push_back(&NakedQuad);
+                } else if (*tok == "h1") {
                     opts.techniques.push_back(&HiddenSingle);
-                } else if (*tok == "ir" || *tok == "IntersectionRemoval") {
-                    opts.techniques.push_back(&IntersectionRemoval);
-                } else if (*tok == "ns" || *tok == "NakedSet") {
-                    opts.techniques.push_back(&NakedSet);
-                } else if (*tok == "hs" || *tok == "HiddenSet") {
-                    opts.techniques.push_back(&HiddenSet);
-                } else if (*tok == "bf" || *tok == "BasicFish") {
-                    opts.techniques.push_back(&BasicFish);
-                } else if (*tok == "xyw" || *tok == "XyWing") {
+                } else if (*tok == "h2") {
+                    opts.techniques.push_back(&HiddenPair);
+                } else if (*tok == "h3") {
+                    opts.techniques.push_back(&HiddenTriple);
+                } else if (*tok == "h4") {
+                    opts.techniques.push_back(&HiddenQuad);
+                } else if (*tok == "lc") {
+                    opts.techniques.push_back(&LockedCandidates);
+                } else if (*tok == "bf2") {
+                    opts.techniques.push_back(&XWing);
+                } else if (*tok == "bf3") {
+                    opts.techniques.push_back(&Swordfish);
+                } else if (*tok == "bf4") {
+                    opts.techniques.push_back(&Jellyfish);
+                } else if (*tok == "ssts") {
+                    opts.techniques.push_back(&SimpleSudokuTechniqueSet);
+                } else if (*tok == "xyw") {
                     opts.techniques.push_back(&XyWing);
-                } else if (*tok == "xyzw" || *tok == "XyzWing") {
+                } else if (*tok == "xyzw") {
                     opts.techniques.push_back(&XyzWing);
-                } else if (*tok == "rp" || *tok == "RemotePair") {
+                } else if (*tok == "rp") {
                     opts.techniques.push_back(&RemotePair);
-                } else if (*tok == "ur" || *tok == "UniqueRectangle") {
+                } else if (*tok == "ur") {
                     opts.techniques.push_back(&UniqueRectangle);
-                } else if (*tok == "fif" || *tok == "FinnedFish") {
+                } else if (*tok == "fif") {
                     opts.techniques.push_back(&FinnedFish);
-                } else if (*tok == "frf" || *tok == "FrankenFish") {
+                } else if (*tok == "frf") {
                     opts.techniques.push_back(&FrankenFish);
-                } else if (*tok == "mf" || *tok == "MutantFish") {
+                } else if (*tok == "mf") {
                     opts.techniques.push_back(&MutantFish);
                 } else {
                     Log(Fatal, "Invalid argument \'%s\' given to option --techniques\n", tok->c_str());
@@ -211,37 +225,36 @@ void usage()
 {
     cout << "usage: solver [options]\n"
        "options:\n"
-       "    --help, -h                  Print this help message.\n\n"
-       "    --output-format, -o         Print sudoku's with the output format given.\n"
-       "        <value|cand|none>       The default is to print candidates.\n\n"
-       "    --input-format, -i          Read sudoku's in with the input format given.\n"
-       "        <value|cand|none>       The default is to input by values.\n\n"
-       "    --log-level, -l             Set the logging level to one of:\n"
-       "        <f|e|w|i|d|t>           Fatal, Error, Warning, Info, Debug, Trace\n\n"
-       "    --print-log-level, -p       Print the log level when anything is logged.\n\n"
-       "    --bifurcate, -b             Use bifurcation if all other techniques fail.\n\n"
-       "    --quiet-bifurcation, -q     Set the log level low while bifurcating to reduce\n"
-       "                                the number of spurious messages.\n\n"
-       "    --no-statistics, -s         Do not print the final statistics.\n\n"
-       "    --techniques, -t            Comma separated list of techniques to use, in\n"
-       "        <techniques,...>        the order specified.\n"
-       "                                NOTE: NakedSingle or HiddenSingle should be used\n"
-       "                                first as they are the only techniques which set\n"
-       "                                cells besides bifurcation.\n"
+       "    --help, -h              Print this help message.\n\n"
+       "    --output-format, -o     Print sudoku's with the output format given.\n"
+       "        <value|cand|none>   The default is to print candidates.\n\n"
+       "    --input-format, -i      Read sudoku's in with the input format given.\n"
+       "        <value|cand|none>   The default is to input by values.\n\n"
+       "    --log-level, -l         Set the logging level to one of:\n"
+       "        <f|e|w|i|d|t>       Fatal, Error, Warning, Info, Debug, Trace\n\n"
+       "    --print-log-level, -p   Print the log level when anything is logged.\n\n"
+       "    --bifurcate, -b         Use bifurcation if all other techniques fail.\n\n"
+       "    --quiet-bifurcation, -q Set the log level low while bifurcating to reduce\n"
+       "                            the number of spurious messages.\n\n"
+       "    --no-statistics, -s     Do not print the final statistics.\n\n"
+       "    --techniques, -t        Comma separated list of techniques to use, in\n"
+       "        <techniques,...>    the order specified.\n"
+       "                            NOTE: NakedSingle or HiddenSingle should be used\n"
+       "                            first as they are the only techniques which set\n"
+       "                            cells besides bifurcation.\n"
        "    Techniques:\n"
-       "        n1, NakedSingle         Uses naked singles\n"
-       "        h1, HiddenSingle        Uses hidden singles\n"
-       "        ir, IntersectionRemoval Uses intersections between lines and boxes\n"
-       "        ns. NakedSet            Uses naked sets\n"
-       "        hs, HiddenSet           Uses hidden sets\n"
-       "        bf, BasicFish           Uses basic fish - N row * N col or vv. (no fin)\n"
-       "        xyw, XyWing             Uses xy-wings\n"
-       "        xyzw, XyzWing           Uses xyz-wings\n"
-       "        rp, RemotePair          Uses remote pairs\n"
-       "        ur, UniqueRectangle     Uses unique rectangles\n"
-       "        fif, FinnedFish         Uses finned fish (slow)\n"
-       "        frf, FrankenFish        Uses franken fish (very slow)\n"
-       "        mf, MutantFish          Uses mutant fish (don't-even-bother slow)\n"
+       "        ssts                simple sudoku technique set\n\n"
+       "        n1, n2, n3, n4      naked single, pair, triple, quad\n"
+       "        h1, h2, h3, h4      hidden single, pair, triple, quad\n"
+       "        lc                  locked candidates in line/box intersections\n"
+       "        bf2, bf3, bf3       x-wing, swordfish, jellyfish (\"basic fish\")\n\n"
+       "        xyw                 xy-wing\n"
+       "        xyzw                xyz-wing\n"
+       "        rp                  remote pair\n"
+       "        ur                  unique rectangle\n"
+       "        fif                 finned fish (slow)\n"
+       "        frf                 franken fish (very slow)\n"
+       "        mf                  mutant fish (don't-even-bother slow)\n"
        "                                NOTE: this solver does not distinguish finned\n"
        "                                fish from sashimi fish\n"
        "\n"

@@ -9,12 +9,13 @@
 namespace {
 typedef boost::tuple<Index_t, Index_t, Index_t> RowColVal;
 
+bool BasicFishWithOrder(Sudoku &, Index_t);
 Index_t MaxSizeOfBasicFish(const Sudoku &, Index_t value);
 std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &, Index_t, Index_t);
 std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &, Index_t, Index_t);
-bool RowBaseBasicFish(Sudoku &, Index_t val);
+bool RowBaseBasicFish(Sudoku &, Index_t val, Index_t order);
 bool RowBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
-bool ColBaseBasicFish(Sudoku &, Index_t val);
+bool ColBaseBasicFish(Sudoku &, Index_t val, Index_t order);
 bool ColBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
 void LogBasicFish(bool rowBase, const boost::array<Index_t, 4> &rows,
         const boost::array<Index_t, 4> &cols,
@@ -23,20 +24,35 @@ void LogBasicFish(bool rowBase, const boost::array<Index_t, 4> &rows,
 const char *OrderToString(Index_t order);
 }
 
-bool BasicFish(Sudoku &sudoku)
+bool XWing(Sudoku &sudoku)
+{
+    return BasicFishWithOrder(sudoku, 2);
+}
+
+bool Swordfish(Sudoku &sudoku)
+{
+    return BasicFishWithOrder(sudoku, 3);
+}
+
+bool Jellyfish(Sudoku &sudoku)
+{
+    return BasicFishWithOrder(sudoku, 4);
+}
+
+namespace {
+
+bool BasicFishWithOrder(Sudoku &sudoku, Index_t order)
 {
     Log(Trace, "searching for basic fish\n");
     for (Index_t val = 1; val <= 9; ++val) {
-        if (RowBaseBasicFish(sudoku, val))
+        if (RowBaseBasicFish(sudoku, val, order))
             return true;
-        if (ColBaseBasicFish(sudoku, val))
+        if (ColBaseBasicFish(sudoku, val, order))
             return true;
     }
     return false;
 }
 
-
-namespace {
 Index_t MaxSizeOfBasicFish(const Sudoku &sudoku, Index_t value)
 {
     Index_t cnt = 0;
@@ -73,28 +89,29 @@ std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &sudoku, Ind
     return ret;
 }
 
-bool RowBaseBasicFish(Sudoku &sudoku, Index_t value)
+bool RowBaseBasicFish(Sudoku &sudoku, Index_t value, Index_t order)
 {
-    Index_t max = MaxSizeOfBasicFish(sudoku, value);
-    for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> indices =
-            IndicesOfPossibleRowBaseBasicFish(sudoku, value, order);
-        if (indices.size() < order)
-            continue;
+    if (MaxSizeOfBasicFish(sudoku, value) < order)
+        return false;
 
-        std::vector<Index_t> indicesToVisit(order);
+    std::vector<Index_t> indices =
+        IndicesOfPossibleRowBaseBasicFish(sudoku, value, order);
+    if (indices.size() < order)
+        return false;
+
+    std::vector<Index_t> indicesToVisit(order);
+    for (Index_t i = 0; i < order; ++i)
+        indicesToVisit[i] = i;
+
+    do {
+        boost::array<Index_t, 4> rowIndices;
         for (Index_t i = 0; i < order; ++i)
-            indicesToVisit[i] = i;
+            rowIndices[i] = indices[indicesToVisit[i]];
 
-        do {
-            boost::array<Index_t, 4> rowIndices;
-            for (Index_t i = 0; i < order; ++i)
-                rowIndices[i] = indices[indicesToVisit[i]];
+        if (RowBaseBasicFishWithIndices(sudoku, value, rowIndices, order))
+            return true;
+    } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
 
-            if (RowBaseBasicFishWithIndices(sudoku, value, rowIndices, order))
-                return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
-    }
     return false;
 }
 
@@ -139,28 +156,29 @@ bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
     return ret;
 }
 
-bool ColBaseBasicFish(Sudoku &sudoku, Index_t value)
+bool ColBaseBasicFish(Sudoku &sudoku, Index_t value, Index_t order)
 {
-    Index_t max = MaxSizeOfBasicFish(sudoku, value);
-    for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> indices =
-            IndicesOfPossibleColBaseBasicFish(sudoku, value, order);
-        if (indices.size() < order)
-            continue;
+    if (MaxSizeOfBasicFish(sudoku, value) < order)
+        return false;
 
-        std::vector<Index_t> indicesToVisit(order);
+    std::vector<Index_t> indices =
+        IndicesOfPossibleColBaseBasicFish(sudoku, value, order);
+    if (indices.size() < order)
+        return false;
+
+    std::vector<Index_t> indicesToVisit(order);
+    for (Index_t i = 0; i < order; ++i)
+        indicesToVisit[i] = i;
+
+    do {
+        boost::array<Index_t, 4> colIndices;
         for (Index_t i = 0; i < order; ++i)
-            indicesToVisit[i] = i;
+            colIndices[i] = indices[indicesToVisit[i]];
 
-        do {
-            boost::array<Index_t, 4> colIndices;
-            for (Index_t i = 0; i < order; ++i)
-                colIndices[i] = indices[indicesToVisit[i]];
+        if (ColBaseBasicFishWithIndices(sudoku, value, colIndices, order))
+            return true;
+    } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
 
-            if (ColBaseBasicFishWithIndices(sudoku, value, colIndices, order))
-                return true;
-        } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
-    }
     return false;
 }
 

@@ -18,9 +18,9 @@ bool RemoveAllCandidatesInHouseNotInCommonCells(House &, Index_t val, const boos
 }
 
 
-bool IntersectionRemoval(Sudoku &sudoku)
+bool LockedCandidates(Sudoku &sudoku)
 {
-    Log(Trace, "searching for line and box intersections\n");
+    Log(Trace, "searching for locked candidates in line/box intersections\n");
     // these locals are for logging purposes only
     std::vector<Index_t> cellsChanged;
     Index_t valChanged;

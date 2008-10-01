@@ -1,7 +1,7 @@
 noinst_LIBRARIES = libtechniques.a
 AM_CPPFLAGS = -I${srcdir}/../
 libtechniques_a_SOURCES = \
-	Bifurcate.cpp NakedSingle.cpp HiddenSingle.cpp IntersectionRemoval.cpp \
+	Bifurcate.cpp NakedSingle.cpp HiddenSingle.cpp LockedCandidates.cpp \
 	LockedSet.cpp Fish.cpp BasicFish.cpp XyWing.cpp XyzWing.cpp \
-	UniqueRectangle.cpp RemotePair.cpp \
+	UniqueRectangle.cpp RemotePair.cpp SimpleSudokuTechniqueSet.cpp \
 	LockedSet.hpp
