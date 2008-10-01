@@ -11,6 +11,8 @@ class Cell
         Cell();
         Cell(Index_t);
         Cell(const Cell &);
+
+        Cell &operator=(Index_t);
         Cell &operator=(const Cell &);
 
         bool HasValue() const;
@@ -50,6 +52,12 @@ inline Cell::Cell(Index_t val)
 inline Cell::Cell(const Cell &x)
 {
     *this = x;
+}
+
+inline Cell &Cell::operator=(Index_t val)
+{
+    SetValue(val);
+    return *this;
 }
 
 inline Cell &Cell::operator=(const Cell &x)
