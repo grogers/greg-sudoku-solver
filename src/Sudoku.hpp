@@ -103,5 +103,10 @@ inline Index_t ColForCellInBox(Index_t box, Index_t pos)
     return (box%3)*3 + pos%3;
 }
 
+inline std::pair<Index_t, Index_t> CellInBox(Index_t box, Index_t pos)
+{
+    return std::make_pair(RowForCellInBox(box, pos), ColForCellInBox(box, pos));
+}
+
 
 #endif

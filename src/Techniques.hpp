@@ -26,6 +26,8 @@ bool XWing(Sudoku &);
 bool Swordfish(Sudoku &);
 bool Jellyfish(Sudoku &);
 
+bool SimpleColor(Sudoku &);
+
 bool XyWing(Sudoku &);
 bool XyzWing(Sudoku &);
 bool RemotePair(Sudoku &);

@@ -23,7 +23,8 @@ bool SimpleSudokuTechniqueSet(Sudoku &sudoku)
         return true;
     if (Swordfish(sudoku))
         return true;
-    // simple colors
+    if (SimpleColor(sudoku))
+        return true;
     // multi colors
     if (HiddenTriple(sudoku))
         return true;

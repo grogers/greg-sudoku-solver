@@ -9,7 +9,8 @@ dist_check_SCRIPTS = test_runner \
 	xyzwing1 remote_pairs1 remote_pairs2 unique_rectangle1 unique_rectangle2 \
 	non_unique1 non_unique2 non_unique3 non_unique4 no_solution1 no_solution2 \
 	no_solution3 finned_xwing1 sashimi_xwing1 sashimi_xwing2 finned_swordfish1 \
-	sashimi_swordfish1 finned_jellyfish1 generator1 \
+	sashimi_swordfish1 finned_jellyfish1 generator1 simple_color1 \
+	simple_color2 simple_color3 \
 	sue_de_coq1 sue_de_coq2
 
 
@@ -23,4 +24,5 @@ TESTS = completed naked_singles1 hidden_singles1 naked_singles2 mixed_singles1 \
 	xyzwing1 remote_pairs1 remote_pairs2 unique_rectangle1 unique_rectangle2 \
 	non_unique1 non_unique2 non_unique3 non_unique4 no_solution1 no_solution2 \
 	no_solution3 finned_xwing1 sashimi_xwing1 sashimi_xwing2 finned_swordfish1 \
-	sashimi_swordfish1 finned_jellyfish1 generator1
+	sashimi_swordfish1 finned_jellyfish1 generator1 simple_color1 \
+	simple_color2 simple_color3

@@ -193,12 +193,14 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                     opts.techniques.push_back(&Swordfish);
                 } else if (*tok == "bf4") {
                     opts.techniques.push_back(&Jellyfish);
-                } else if (*tok == "ssts") {
-                    opts.techniques.push_back(&SimpleSudokuTechniqueSet);
                 } else if (*tok == "xyw") {
                     opts.techniques.push_back(&XyWing);
+                } else if (*tok == "ssts") {
+                    opts.techniques.push_back(&SimpleSudokuTechniqueSet);
                 } else if (*tok == "xyzw") {
                     opts.techniques.push_back(&XyzWing);
+                } else if (*tok == "sc") {
+                    opts.techniques.push_back(&SimpleColor);
                 } else if (*tok == "rp") {
                     opts.techniques.push_back(&RemotePair);
                 } else if (*tok == "ur") {
@@ -249,6 +251,7 @@ void usage()
        "        lc                  locked candidates in line/box intersections\n"
        "        bf2, bf3, bf3       x-wing, swordfish, jellyfish (\"basic fish\")\n\n"
        "        xyw                 xy-wing\n"
+       "        sc                  simple colors\n"
        "        xyzw                xyz-wing\n"
        "        rp                  remote pair\n"
        "        ur                  unique rectangle\n"
