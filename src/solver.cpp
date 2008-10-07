@@ -19,10 +19,11 @@ namespace {
         std::vector<Technique> techniques;
         bool bifurcate;
         bool printStatistics;
+        bool echo;
 
         SolverOptions()
             : outputFormat(Sudoku::Candidates), inputFormat(Sudoku::Value),
-            bifurcate(false), printStatistics(true) {}
+            bifurcate(false), printStatistics(true), echo(false) {}
     };
 
     void ConvertCmdline(list<string> &, int argc, char **argv);
@@ -45,7 +46,8 @@ int main(int argc, char **argv)
 
     while (sudoku.Input(cin, opts.inputFormat))
     {
-        sudoku.Output(cout, opts.outputFormat); // print the read in puzzle
+        if (opts.echo)
+            sudoku.Output(cout, opts.outputFormat); // print the read in puzzle
 
         int solutions = sudoku.Solve(opts.techniques, opts.bifurcate);
         if (solutions == 0) {
@@ -103,11 +105,13 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                 exit(1);
             }
 
-            if (*i == "value") {
+            if (*i == "v") {
                 opts.outputFormat = Sudoku::Value;
-            } else if (*i == "cand") {
+            } else if (*i == "c") {
                 opts.outputFormat = Sudoku::Candidates;
-            } else if (*i == "none") {
+            } else if (*i == "s") {
+                opts.outputFormat = Sudoku::SingleLine;
+            } else if (*i == "n") {
                 opts.outputFormat = Sudoku::None;
             } else {
                 Log(Fatal, "Invalid output format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
@@ -119,16 +123,18 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                 exit(1);
             }
 
-            if (*i == "value") {
+            if (*i == "v" || *i == "s") {
                 opts.inputFormat = Sudoku::Value;
-            } else if (*i == "cand") {
+            } else if (*i == "c") {
                 opts.inputFormat = Sudoku::Candidates;
-            } else if (*i == "none") {
+            } else if (*i == "n") {
                 opts.inputFormat = Sudoku::None;
             } else {
                 Log(Fatal, "Invalid input format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
                 exit(1);
             }
+        } else if (*i == "--echo" || *i == "-e") {
+            opts.echo = true;
         } else if (*i == "--bifurcate" || *i == "-b") {
             opts.bifurcate = true;
         } else if (*i == "--quiet-bifurcation" || *i == "-q") {
@@ -229,9 +235,11 @@ void usage()
        "options:\n"
        "    --help, -h              Print this help message.\n\n"
        "    --output-format, -o     Print sudoku's with the output format given.\n"
-       "        <value|cand|none>   The default is to print candidates.\n\n"
+       "        <v|c|s|n>           The default is to print candidates.\n"
+    "                               Value, Candidates, Single Line, None\n\n"
        "    --input-format, -i      Read sudoku's in with the input format given.\n"
-       "        <value|cand|none>   The default is to input by values.\n\n"
+       "        <v|c|n>             The default is to input by values.\n\n"
+       "    --echo, -e              Echo the read in puzzles in the output format chosen\n"
        "    --log-level, -l         Set the logging level to one of:\n"
        "        <f|e|w|i|d|t>       Fatal, Error, Warning, Info, Debug, Trace\n\n"
        "    --print-log-level, -p   Print the log level when anything is logged.\n\n"

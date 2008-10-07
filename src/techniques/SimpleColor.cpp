@@ -21,6 +21,7 @@ bool SimpleColorEliminations(Sudoku &sudoku, const ColorMap &, Index_t);
 bool EliminateCellsWhichSeeBothConjugates(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesItself(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesAllCellsInHouse(Sudoku &, const ColorMap &, Index_t);
+std::set<Color> BuildSetOfColors(const ColorMap &);
 }
 
 
@@ -170,7 +171,7 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
             boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
                 sudoku.GetBuddies(i, j);
 
-            std::set<std::pair<Index_t, bool> > colorsSeen;
+            std::set<Color> colorsSeen;
             for (Index_t k = 0; k < NUM_BUDDIES; ++k) {
                 ColorMap::const_iterator it = colors.find(buddies[k]);
                 if (it != colors.end())
@@ -178,7 +179,7 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
                                 it->second.second));
             }
 
-            for (std::set<std::pair<Index_t, bool> >::const_iterator it =
+            for (std::set<Color>::const_iterator it =
                     colorsSeen.begin(); it != colorsSeen.end(); ++it) {
                 if (colorsSeen.find(std::make_pair(it->first, !it->second)) !=
                         colorsSeen.end()) {
@@ -256,10 +257,30 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
     return false;
 }
 
-bool EliminateColorSeesAllCellsInHouse(Sudoku &, const ColorMap &, Index_t)
+bool EliminateColorSeesAllCellsInHouse(Sudoku &sudoku, const ColorMap &colors,
+        Index_t value)
 {
-    return false; // fixme
+    std::set<Color> colorSet = BuildSetOfColors(colors);
+
+    for (std::set<Color>::const_iterator it = colorSet.begin();
+            it != colorSet.end(); ++it) {
+        for (Index_t i = 0; i < 9; ++i) {
+            House house = sudoku.GetRow(i);
+        }
+    }
+
+    return false;
 }
+
+std::set<Color> BuildSetOfColors(const ColorMap &colors)
+{
+    std::set<Color> ret;
+    for (ColorMap::const_iterator i = colors.begin(); i != colors.end(); ++i) {
+        ret.insert(i->second);
+    }
+    return ret;
+}
+
 
 
 }
