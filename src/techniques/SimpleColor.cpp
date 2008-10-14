@@ -10,7 +10,33 @@
 
 namespace {
 bool SimpleColorForValue(Sudoku &, Index_t);
-typedef std::pair<Index_t, bool> Color;
+struct Color
+{
+    Index_t id;
+    bool parity;
+
+    Color() : id(0), parity(false) {}
+    Color(Index_t id, bool parity) : id(id), parity(parity) {}
+    Color(const Color &x) { *this = x; }
+    Color &operator=(const Color &x)
+    {
+        this->id = x.id;
+        this->parity = x.parity;
+        return *this;
+    }
+    bool operator==(const Color &x) const
+    {
+        return id == x.id && parity == x.parity;
+    }
+    bool operator!=(const Color &x) const { return !(*this == x); }
+    bool operator<(const Color &x) const
+    {
+        if (id == x.id)
+            return parity < x.parity;
+        return id < x.id;
+    }
+};
+Color FlipColor(const Color &x);
 typedef std::map<std::pair<Index_t, Index_t>, Color> ColorMap;
 void BuildColorMap(const Sudoku &, Index_t, ColorMap &);
 bool BilocationInHouse(const House &, Index_t, Index_t &, Index_t &);
@@ -38,6 +64,13 @@ bool SimpleColor(Sudoku &sudoku)
 
 
 namespace {
+
+Color ParityFlipped(const Color &x)
+{
+    Color ret(x);
+    ret.parity = !ret.parity;
+    return ret;
+}
 
 bool SimpleColorForValue(Sudoku &sudoku, Index_t value)
 {
@@ -96,26 +129,24 @@ void AddConjugateCellsToColorMap(const std::pair<Index_t, Index_t> &cell1,
 
     if (it1 == colors.end()) {
         if (it2 == colors.end()) {
-            colors[cell1] = std::make_pair(colorId, false);
-            colors[cell2] = std::make_pair(colorId, true);
+            colors[cell1] = Color(colorId, false);
+            colors[cell2] = Color(colorId, true);
         } else {
-            colors[cell1] = std::make_pair(it2->second.first,
-                    !it2->second.second);
+            colors[cell1] = ParityFlipped(it2->second);
         }
     } else {
         if (it2 == colors.end()) {
-            colors[cell2] = std::make_pair(it1->second.first,
-                    !it1->second.second);
+            colors[cell2] = ParityFlipped(it1->second);
         } else {
             // replace the colors at cell2 with the conjugate of the colors at
             // cell 1
-            Index_t newColor = it1->second.first;
-            Index_t oldColor = it2->second.first;
-            bool flipColor = (it1->second.second == it2->second.second);
+            Index_t newColorId = it1->second.id;
+            Index_t oldColorId = it2->second.id;
+            bool flipParity = (it1->second.parity == it2->second.parity);
             for (ColorMap::iterator i = colors.begin(); i != colors.end(); ++i) {
-                if (i->second.first == oldColor) {
-                    i->second.first = newColor;
-                    i->second.second = (i->second.second != flipColor);
+                if (i->second.id == oldColorId) {
+                    i->second = Color(newColorId,
+                            (i->second.parity != flipParity));
                 }
             }
         }
@@ -131,8 +162,8 @@ void PrintColorMap(const ColorMap &colors, Index_t value)
             if (it == colors.end()) {
                 std::cout << "   ";
             } else {
-                std::cout << it->second.first;
-                if (it->second.second)
+                std::cout << it->second.id;
+                if (it->second.parity)
                     std::cout << '+';
                 else
                     std::cout << '-';
@@ -175,14 +206,12 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
             for (Index_t k = 0; k < NUM_BUDDIES; ++k) {
                 ColorMap::const_iterator it = colors.find(buddies[k]);
                 if (it != colors.end())
-                    colorsSeen.insert(std::make_pair(it->second.first,
-                                it->second.second));
+                    colorsSeen.insert(it->second);
             }
 
             for (std::set<Color>::const_iterator it =
                     colorsSeen.begin(); it != colorsSeen.end(); ++it) {
-                if (colorsSeen.find(std::make_pair(it->first, !it->second)) !=
-                        colorsSeen.end()) {
+                if (colorsSeen.find(ParityFlipped(*it)) != colorsSeen.end()) {
                     Cell cell = sudoku.GetCell(i, j);
                     if (cell.ExcludeCandidate(value)) {
                         sudoku.SetCell(cell, i, j);
@@ -215,20 +244,18 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
 {
     for (ColorMap::const_iterator i = colors.begin(); i != colors.end(); ++i) {
         Index_t row = i->first.first, col = i->first.second;
-        Index_t colorId = i->second.first;
-        bool colorParity = i->second.second;
+        Color currColor = i->second;
 
         ColorMap::const_iterator j = i;
         for (++j; j != colors.end(); ++j) {
-            if (colorId != j->second.first || colorParity != j->second.second)
+            if (currColor != j->second)
                 continue;
 
             if (IsBuddy(row, col, j->first.first, j->first.second)) {
                 std::vector<std::pair<Index_t, Index_t> > changed;
                 for (ColorMap::const_iterator k = colors.begin();
                         k != colors.end(); ++k) {
-                    if (k->second.first == colorId &&
-                            k->second.second == colorParity) {
+                    if (k->second == currColor) {
                         Index_t r = k->first.first, c = k->first.second;
                         Cell cell = sudoku.GetCell(r, c);
                         if (cell.ExcludeCandidate(value)) {
