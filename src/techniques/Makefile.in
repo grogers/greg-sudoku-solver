@@ -48,7 +48,7 @@ am_libtechniques_a_OBJECTS = Bifurcate.$(OBJEXT) NakedSingle.$(OBJEXT) \
 	LockedSet.$(OBJEXT) Fish.$(OBJEXT) BasicFish.$(OBJEXT) \
 	XyWing.$(OBJEXT) XyzWing.$(OBJEXT) UniqueRectangle.$(OBJEXT) \
 	RemotePair.$(OBJEXT) SimpleSudokuTechniqueSet.$(OBJEXT) \
-	SimpleColor.$(OBJEXT)
+	Coloring.$(OBJEXT)
 libtechniques_a_OBJECTS = $(am_libtechniques_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -155,7 +155,7 @@ libtechniques_a_SOURCES = \
 	Bifurcate.cpp NakedSingle.cpp HiddenSingle.cpp LockedCandidates.cpp \
 	LockedSet.cpp Fish.cpp BasicFish.cpp XyWing.cpp XyzWing.cpp \
 	UniqueRectangle.cpp RemotePair.cpp SimpleSudokuTechniqueSet.cpp \
-	SimpleColor.cpp \
+	Coloring.cpp \
 	LockedSet.hpp
 
 all: all-am
@@ -207,13 +207,13 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BasicFish.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Bifurcate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Coloring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Fish.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/HiddenSingle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LockedCandidates.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LockedSet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/NakedSingle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RemotePair.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SimpleColor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SimpleSudokuTechniqueSet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/UniqueRectangle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XyWing.Po@am__quote@

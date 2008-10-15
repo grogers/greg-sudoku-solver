@@ -10,16 +10,18 @@
 #include <sstream>
 
 namespace {
-bool SimpleColorForValue(Sudoku &, Index_t);
 DEFINE_PAIR(Color, Index_t, bool, id, parity);
 Color FlipColor(const Color &x);
 typedef std::map<Position, Color> ColorMap;
+bool SimpleColorForValue(Sudoku &, Index_t);
+bool MultiColorForValue(Sudoku &, Index_t);
 void BuildColorMap(const Sudoku &, Index_t, ColorMap &);
 bool BilocationInHouse(const House &, Index_t, Index_t &, Index_t &);
 void AddConjugateCellsToColorMap(const Position &, const Position &,
         ColorMap &, Index_t);
 void PrintColorMap(const ColorMap &, Index_t);
 bool SimpleColorEliminations(Sudoku &sudoku, const ColorMap &, Index_t);
+bool MultiColorEliminations(Sudoku &sudoku, const ColorMap &, Index_t);
 bool EliminateCellsWhichSeeBothConjugates(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesItself(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesAllCellsInHouse(Sudoku &, const ColorMap &, Index_t);
@@ -44,6 +46,17 @@ bool SimpleColor(Sudoku &sudoku)
     return false;
 }
 
+bool MultiColor(Sudoku &sudoku)
+{
+    Log(Trace, "searching for simple color eliminations\n");
+
+    for (Index_t val = 1; val <= 9; ++val) {
+        if (MultiColorForValue(sudoku, val))
+            return true;
+    }
+    return false;
+}
+
 
 namespace {
 
@@ -61,11 +74,18 @@ bool SimpleColorForValue(Sudoku &sudoku, Index_t value)
     return SimpleColorEliminations(sudoku, colors, value);
 }
 
+bool MultiColorForValue(Sudoku &sudoku, Index_t value)
+{
+    ColorMap colors;
+    BuildColorMap(sudoku, value, colors);
+    return MultiColorEliminations(sudoku, colors, value);
+}
+
 void BuildColorMap(const Sudoku &sudoku, Index_t value, ColorMap &colors)
 {
     Index_t cnt = 0;
     for (Index_t i = 0; i < 9; ++i) {
-        Index_t idx1, idx2;
+        Index_t idx1 = 0, idx2 = 0;
         if (BilocationInHouse(sudoku.GetRow(i), value, idx1, idx2)) {
             AddConjugateCellsToColorMap(Position(i, idx1),
                     Position(i, idx2), colors, cnt++);
@@ -170,6 +190,18 @@ bool SimpleColorEliminations(Sudoku &sudoku, const ColorMap &colors,
     return ret;
 }
 
+bool MultiColorEliminations(Sudoku &sudoku, const ColorMap &colors,
+        Index_t value)
+{
+    bool ret = false;
+    // two ways for multi colors:
+
+    // both parities of a color, A+ and A- see a single color B+, then B+ can't be true
+
+    // two colors, A+ and B+ see each other, then any cell that sees A- and B- can't be true
+    return ret;
+}
+
 bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
         const ColorMap &colors, Index_t value)
 {
@@ -225,25 +257,14 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
         Index_t value)
 {
     for (ColorMap::const_iterator i = colors.begin(); i != colors.end(); ++i) {
-        Color currColor = i->second;
-
         ColorMap::const_iterator j = i;
         for (++j; j != colors.end(); ++j) {
-            if (currColor != j->second)
+            if (i->second != j->second)
                 continue;
 
             if (IsBuddy(i->first, j->first)) {
                 std::vector<Position> changed;
-                for (ColorMap::const_iterator k = colors.begin();
-                        k != colors.end(); ++k) {
-                    if (k->second == currColor) {
-                        Cell cell = sudoku.GetCell(k->first);
-                        if (cell.ExcludeCandidate(value)) {
-                            sudoku.SetCell(cell, k->first);
-                            changed.push_back(k->first);
-                        }
-                    }
-                }
+                RemoveColor(sudoku, colors, i->second, value, changed);
 
                 assert(changed.size() > 0);
 

@@ -25,7 +25,8 @@ bool SimpleSudokuTechniqueSet(Sudoku &sudoku)
         return true;
     if (SimpleColor(sudoku))
         return true;
-    // multi colors
+    if (MultiColor(sudoku))
+        return true;
     if (HiddenTriple(sudoku))
         return true;
     if (XyWing(sudoku))
