@@ -1,7 +1,7 @@
 SUBDIRS = test techniques
 
 SOURCES = Logging.cpp Sudoku.cpp Cell.cpp \
-	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp
+	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp DefinePair.hpp
 LDADD = techniques/libtechniques.a
 
 bin_PROGRAMS = solver generator

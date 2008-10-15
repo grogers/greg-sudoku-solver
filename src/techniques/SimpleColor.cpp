@@ -1,5 +1,6 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
+#include "DefinePair.hpp"
 
 #include <climits>
 #include <map>
@@ -10,32 +11,7 @@
 
 namespace {
 bool SimpleColorForValue(Sudoku &, Index_t);
-struct Color
-{
-    Index_t id;
-    bool parity;
-
-    Color() : id(0), parity(false) {}
-    Color(Index_t id, bool parity) : id(id), parity(parity) {}
-    Color(const Color &x) { *this = x; }
-    Color &operator=(const Color &x)
-    {
-        this->id = x.id;
-        this->parity = x.parity;
-        return *this;
-    }
-    bool operator==(const Color &x) const
-    {
-        return id == x.id && parity == x.parity;
-    }
-    bool operator!=(const Color &x) const { return !(*this == x); }
-    bool operator<(const Color &x) const
-    {
-        if (id == x.id)
-            return parity < x.parity;
-        return id < x.id;
-    }
-};
+DEFINE_PAIR(Color, Index_t, bool, id, parity);
 Color FlipColor(const Color &x);
 typedef std::map<std::pair<Index_t, Index_t>, Color> ColorMap;
 void BuildColorMap(const Sudoku &, Index_t, ColorMap &);
@@ -48,6 +24,8 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesItself(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesAllCellsInHouse(Sudoku &, const ColorMap &, Index_t);
 std::set<Color> BuildSetOfColors(const ColorMap &);
+std::set<std::pair<Index_t, Index_t> > BuildColorCoverage(const Sudoku &,
+        const ColorMap &, const Color &, Index_t);
 }
 
 
@@ -308,6 +286,28 @@ std::set<Color> BuildSetOfColors(const ColorMap &colors)
     return ret;
 }
 
+/**
+ * when executing this procedure, we assume that we have already found colors
+ * that see each other, so no buddies of any cell of a certain color will lie
+ * on that color.
+ */
+std::set<std::pair<Index_t, Index_t> >
+BuildColorCoverage(const Sudoku &sudoku, const ColorMap &colorMap,
+        const Color &color)
+{
+    std::set<std::pair<Index_t, Index_t> > ret;
+    typedef ColorMap::const_iterator CIter;
+    for (CIter i = colorMap.begin(); i != colorMap.end(); ++i) {
+        if (i->second != color)
+            continue;
+
+        boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
+            sudoku.GetBuddies(i->first.first, i->first.second);
+        for (Index_t j = 0; j < NUM_BUDDIES; ++j)
+            ret.insert(buddies[j]);
+    }
+    return ret;
+}
 
 
 }
