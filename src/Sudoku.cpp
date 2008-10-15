@@ -183,6 +183,34 @@ bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2)
     return false;
 }
 
+boost::array<Position, 9> RowPositions(Index_t row)
+{
+    boost::array<Position, 9> ret;
+    for (Index_t i = 0; i < 9; ++i)
+        ret[i] = Position(row, i);
+    return ret;
+}
+
+boost::array<Position, 9> ColPositions(Index_t col)
+{
+    boost::array<Position, 9> ret;
+    for (Index_t i = 0; i < 9; ++i)
+        ret[i] = Position(i, col);
+    return ret;
+}
+
+boost::array<Position, 9> BoxPositions(Index_t box)
+{
+    boost::array<Position, 9> ret;
+    Index_t n = 0;
+    for (Index_t i = (box/3)*3; i < (box/3)*3 + 3; ++i) {
+        for (Index_t j = (box%3)*3; j < (box%3)*3 + 3; ++j)
+            ret[n++] = Position(i, j);
+    }
+    return ret;
+}
+
+
 
 
 

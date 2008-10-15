@@ -114,6 +114,9 @@ Sudoku::GetBuddies(const Position &x) const
     return GetBuddies(x.row, x.col);
 }
 
+boost::array<Position, 9> RowPositions(Index_t);
+boost::array<Position, 9> ColPositions(Index_t);
+boost::array<Position, 9> BoxPositions(Index_t);
 
 inline Index_t BoxIndex(Index_t row, Index_t col)
 {

@@ -25,7 +25,11 @@ bool EliminateColorSeesItself(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesAllCellsInHouse(Sudoku &, const ColorMap &, Index_t);
 std::set<Color> BuildSetOfColors(const ColorMap &);
 std::set<Position> BuildColorCoverage(const Sudoku &, const ColorMap &,
-        const Color &, Index_t);
+        const Color &);
+bool ColorSeesAllOpenCellsInHouse(const Sudoku &,
+        const boost::array<Position, 9> &, const std::set<Position> &, Index_t);
+void RemoveColor(Sudoku &, const ColorMap &, const Color &, Index_t,
+        std::vector<Position> &);
 }
 
 
@@ -264,15 +268,41 @@ bool EliminateColorSeesAllCellsInHouse(Sudoku &sudoku, const ColorMap &colors,
         Index_t value)
 {
     std::set<Color> colorSet = BuildSetOfColors(colors);
+    std::vector<Position> changed;
 
     for (std::set<Color>::const_iterator it = colorSet.begin();
             it != colorSet.end(); ++it) {
+        std::set<Position> coverage = BuildColorCoverage(sudoku, colors, *it);
         for (Index_t i = 0; i < 9; ++i) {
-            House house = sudoku.GetRow(i);
+            boost::array<Position, 9> house = RowPositions(i);
+            if (ColorSeesAllOpenCellsInHouse(sudoku, house, coverage, value))
+                RemoveColor(sudoku, colors, *it, value, changed);
+
+            house = ColPositions(i);
+            if (ColorSeesAllOpenCellsInHouse(sudoku, house, coverage, value))
+                RemoveColor(sudoku, colors, *it, value, changed);
+
+            house = BoxPositions(i);
+            if (ColorSeesAllOpenCellsInHouse(sudoku, house, coverage, value))
+                RemoveColor(sudoku, colors, *it, value, changed);
         }
     }
 
-    return false;
+    if (changed.size() > 0) {
+        std::ostringstream sstr;
+        for (Index_t i = 0; i != changed.size(); ++i) {
+            if (i != 0)
+                sstr << ", ";
+            sstr << 'r' << changed[i].row+1 << 'c'
+                << changed[i].col+1 << '#' << value;
+        }
+
+        Log(Info, "simple colors (color sees all open cells in house) ==> %s\n",
+                sstr.str().c_str());
+        return true;
+    } else {
+        return false;
+    }
 }
 
 std::set<Color> BuildSetOfColors(const ColorMap &colors)
@@ -306,5 +336,35 @@ std::set<Position> BuildColorCoverage(const Sudoku &sudoku,
     return ret;
 }
 
+bool ColorSeesAllOpenCellsInHouse(const Sudoku &sudoku,
+        const boost::array<Position, 9> &house,
+        const std::set<Position> &coverage, Index_t value)
+{
+    bool foundAny = false;
+    for (Index_t i = 0; i < 9; ++i) {
+        if (sudoku.GetCell(house[i]).IsCandidate(value)) {
+            if (coverage.find(house[i]) == coverage.end())
+                return false;
+            else
+                foundAny = true;
+        }
+    }
+    return foundAny;
+}
+
+void RemoveColor(Sudoku &sudoku, const ColorMap &colorMap, const Color &color,
+        Index_t value, std::vector<Position> &changed)
+{
+    for (ColorMap::const_iterator i = colorMap.begin();
+            i != colorMap.end(); ++i) {
+        if (i->second == color) {
+            Cell cell = sudoku.GetCell(i->first);
+            if (cell.ExcludeCandidate(value)) {
+                sudoku.SetCell(cell, i->first);
+                changed.push_back(i->first);
+            }
+        }
+    }
+}
 
 }
