@@ -13,17 +13,22 @@ using namespace std;
 
 namespace {
 
+    enum PrintStats {
+        None,
+        FinalOnly,
+        EachPuzzle
+    };
     struct SolverOptions {
         Sudoku::Format outputFormat;
         Sudoku::Format inputFormat;
         std::vector<Technique> techniques;
         bool bifurcate;
-        bool printStatistics;
+        PrintStats printStatistics;
         bool echo;
 
         SolverOptions()
             : outputFormat(Sudoku::Candidates), inputFormat(Sudoku::Value),
-            bifurcate(false), printStatistics(true), echo(false) {}
+            bifurcate(false), printStatistics(EachPuzzle), echo(false) {}
     };
 
     void ConvertCmdline(list<string> &, int argc, char **argv);
@@ -52,15 +57,15 @@ int main(int argc, char **argv)
         int solutions = sudoku.Solve(opts.techniques, opts.bifurcate);
         if (solutions == 0) {
             ++numImpossible;
-            if (opts.printStatistics)
+            if (opts.printStatistics == EachPuzzle)
                 cout << "puzzle was impossible\n";
         } else if (solutions == 1) {
             ++numUnique;
-            if (opts.printStatistics)
+            if (opts.printStatistics == EachPuzzle)
                 cout << "puzzle was unique\n";
         } else {
             ++numNonUnique;
-            if (opts.printStatistics)
+            if (opts.printStatistics == EachPuzzle)
                 cout << "puzzle was non-unique\n";
         }
 
@@ -69,7 +74,8 @@ int main(int argc, char **argv)
         ++numTotal;
     }
 
-    if (opts.printStatistics && numTotal != 0) {
+    if ((opts.printStatistics == FinalOnly ||
+                opts.printStatistics == EachPuzzle) && numTotal != 0) {
         const int width = 10;
         cout << "Final Statistics:\n"
              << "-----------------\n" << left
@@ -114,7 +120,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
             } else if (*i == "n") {
                 opts.outputFormat = Sudoku::None;
             } else {
-                Log(Fatal, "Invalid output format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
+                Log(Fatal, "Invalid output format \'%s\' specified, expected \'v\', \'c\', \'s\', or \'n\'\n", i->c_str());
                 exit(1);
             }
         } else if (*i == "--input-format" || *i == "-i") {
@@ -130,7 +136,7 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
             } else if (*i == "n") {
                 opts.inputFormat = Sudoku::None;
             } else {
-                Log(Fatal, "Invalid input format \'%s\' specified, expected \'value\', \'cand\', or \'none\'\n", i->c_str());
+                Log(Fatal, "Invalid input format \'%s\' specified, expected \'v\', \'c\', \'s\', or \'n\'\n", i->c_str());
                 exit(1);
             }
         } else if (*i == "--echo" || *i == "-e") {
@@ -163,8 +169,22 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
             }
         } else if (*i == "--print-log-level" || *i == "-p") {
             SetShouldPrintLogLevel(true);
-        } else if (*i == "--no-statistics" || *i == "-s") {
-            opts.printStatistics = false;
+        } else if (*i == "--statistics" || *i == "-s") {
+            if (++i == cmdline.end()) {
+                Log(Fatal, "No argument given to option --statistics\n");
+                exit(1);
+            }
+
+            if (*i == "n") {
+                opts.printStatistics = None;
+            } else if (*i == "f") {
+                opts.printStatistics = FinalOnly;
+            } else if (*i == "e") {
+                opts.printStatistics = EachPuzzle;
+            } else {
+                Log(Fatal, "Invalid statistics argument \'%s\' specified, expected \'n\', \'f\', or \'e\'\n", i->c_str());
+                exit(1);
+            }
         } else if (*i == "--techniques" || *i == "-t") {
             if (++i == cmdline.end()) {
                 Log(Fatal, "No argument given to option --techniques\n");
@@ -246,7 +266,8 @@ void usage()
        "    --bifurcate, -b         Use bifurcation if all other techniques fail.\n\n"
        "    --quiet-bifurcation, -q Set the log level low while bifurcating to reduce\n"
        "                            the number of spurious messages.\n\n"
-       "    --no-statistics, -s     Do not print the final statistics.\n\n"
+       "    --statistics, -s        Do not print the final statistics.\n"
+       "        <n|e|f>             none, each puzzle, final only\n\n"
        "    --techniques, -t        Comma separated list of techniques to use, in\n"
        "        <techniques,...>    the order specified.\n"
        "                            NOTE: NakedSingle or HiddenSingle should be used\n"

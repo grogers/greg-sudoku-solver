@@ -1,3 +1,3 @@
 #!/bin/sh
 
-../solver --output-format n --log-level f -q --no-statistics $@
+../solver --output-format n --log-level f -q --statistics n $@
