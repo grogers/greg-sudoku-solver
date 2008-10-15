@@ -9,7 +9,7 @@
 #include <boost/tuple/tuple.hpp>
 
 namespace {
-typedef std::list<std::deque<std::pair<Index_t, Index_t> > > RemotePairList;
+typedef std::list<std::deque<Position> > RemotePairList;
 RemotePairList BuildInitialRemotePairList(const Sudoku &);
 boost::array<Index_t, 2> GetValuesForBivalueCell(const Cell &);
 bool AddLayerToRemotePairListBack(const Sudoku &, RemotePairList &);
@@ -18,14 +18,13 @@ void PrintRemotePairList(const RemotePairList &);
 bool CondenseRemotePairList(RemotePairList &);
 bool EliminateCandidatesWithRemotePairList(Sudoku &, const RemotePairList &);
 bool EliminateCandidatesWithRemotePairChain(Sudoku &,
-        const std::deque<std::pair<Index_t, Index_t> > &);
-bool EliminateCandidatesWithRemotePairEndpoints(Sudoku &,
-        const std::pair<Index_t, Index_t> &,
-        const std::pair<Index_t, Index_t> &,
+        const std::deque<Position> &);
+bool EliminateCandidatesWithRemotePairEndpoints(Sudoku &, const Position &,
+        const Position &,
         std::vector<boost::tuple<Index_t, Index_t, Index_t> > &);
 void LogRemotePair(const Sudoku &,
-        std::deque<std::pair<Index_t, Index_t> >::const_iterator,
-        std::deque<std::pair<Index_t, Index_t> >::const_iterator,
+        std::deque<Position>::const_iterator,
+        std::deque<Position>::const_iterator,
         const std::vector<boost::tuple<Index_t, Index_t, Index_t> > &);
 
 }
@@ -56,8 +55,8 @@ RemotePairList BuildInitialRemotePairList(const Sudoku &sudoku)
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
             if (sudoku.GetCell(i, j).NumCandidates() == 2) {
-                ret.push_back(std::deque<std::pair<Index_t, Index_t> >());
-                ret.back().push_back(std::make_pair(i, j));
+                ret.push_back(std::deque<Position>());
+                ret.back().push_back(Position(i, j));
             }
         }
     }
@@ -81,17 +80,16 @@ bool AddLayerToRemotePairListBack(const Sudoku &sudoku, RemotePairList &remotePa
     bool ret = false;
     for (RemotePairList::iterator i = remotePairs.begin();
             i != remotePairs.end(); ++i) {
-        Index_t row = i->back().first, col = i->back().second;
-        boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
-            sudoku.GetBuddies(row, col);
+        boost::array<Position, NUM_BUDDIES> buddies =
+            sudoku.GetBuddies(i->back());
         boost::array<Index_t, 2> values =
-            GetValuesForBivalueCell(sudoku.GetCell(row, col));
+            GetValuesForBivalueCell(sudoku.GetCell(i->back()));
 
         for (Index_t j = 0; j < NUM_BUDDIES; ++j) {
-            if (buddies[j].first == row && buddies[j].second == col)
+            if (i->back() == buddies[j])
                 continue;
 
-            Cell cell = sudoku.GetCell(buddies[j].first, buddies[j].second);
+            Cell cell = sudoku.GetCell(buddies[j]);
             if (cell.IsCandidate(values[0]) && cell.IsCandidate(values[1]) &&
                     cell.NumCandidates() == 2 &&
                     std::find(i->begin(), i->end(), buddies[j]) == i->end()) {
@@ -109,17 +107,16 @@ bool AddLayerToRemotePairListFront(const Sudoku &sudoku, RemotePairList &remoteP
     bool ret = false;
     for (RemotePairList::iterator i = remotePairs.begin();
             i != remotePairs.end(); ++i) {
-        Index_t row = i->front().first, col = i->front().second;
-        boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
-            sudoku.GetBuddies(row, col);
+        boost::array<Position, NUM_BUDDIES> buddies =
+            sudoku.GetBuddies(i->front());
         boost::array<Index_t, 2> values =
-            GetValuesForBivalueCell(sudoku.GetCell(row, col));
+            GetValuesForBivalueCell(sudoku.GetCell(i->front()));
 
         for (Index_t j = 0; j < NUM_BUDDIES; ++j) {
-            if (buddies[j].first == row && buddies[j].second == col)
+            if (i->front() == buddies[j])
                 continue;
 
-            Cell cell = sudoku.GetCell(buddies[j].first, buddies[j].second);
+            Cell cell = sudoku.GetCell(buddies[j]);
             if (cell.IsCandidate(values[0]) && cell.IsCandidate(values[1]) &&
                     cell.NumCandidates() == 2 &&
                     std::find(i->begin(), i->end(), buddies[j]) == i->end()) {
@@ -138,11 +135,11 @@ void PrintRemotePairList(const RemotePairList &remotePairs)
     for (RemotePairList::const_iterator i = remotePairs.begin();
             i != remotePairs.end(); ++i) {
         std::ostringstream sstr;
-        for (std::deque<std::pair<Index_t, Index_t> >::const_iterator j = i->begin();
+        for (std::deque<Position>::const_iterator j = i->begin();
                 j != i->end(); ++j) {
             if (j != i->begin())
                 sstr << ", ";
-            sstr << 'r' << j->first+1 << 'c' << j->second+1;
+            sstr << 'r' << j->row+1 << 'c' << j->col+1;
         }
         Log(Trace, "%s\n", sstr.str().c_str());
     }
@@ -190,12 +187,12 @@ bool EliminateCandidatesWithRemotePairList(Sudoku &sudoku,
 }
 
 bool EliminateCandidatesWithRemotePairChain(Sudoku &sudoku,
-        const std::deque<std::pair<Index_t, Index_t> > &pairChain)
+        const std::deque<Position> &pairChain)
 {
     bool ret = false;
-    for (std::deque<std::pair<Index_t, Index_t> >::const_iterator i =
-            pairChain.begin(); i != pairChain.end(); ++i) {
-        for (std::deque<std::pair<Index_t, Index_t> >::const_iterator j = i + 3;
+    for (std::deque<Position>::const_iterator i = pairChain.begin();
+            i != pairChain.end(); ++i) {
+        for (std::deque<Position>::const_iterator j = i + 3;
                 j < pairChain.end(); j += 2) {
             std::vector<boost::tuple<Index_t, Index_t, Index_t> > changed;
             if (EliminateCandidatesWithRemotePairEndpoints(sudoku, *i, *j, changed)) {
@@ -208,28 +205,26 @@ bool EliminateCandidatesWithRemotePairChain(Sudoku &sudoku,
 }
 
 bool EliminateCandidatesWithRemotePairEndpoints(Sudoku &sudoku,
-        const std::pair<Index_t, Index_t> &x,
-        const std::pair<Index_t, Index_t> &y,
+        const Position &x,
+        const Position &y,
         std::vector<boost::tuple<Index_t, Index_t, Index_t> > &changed)
 {
     bool ret = false;
-    boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
-        sudoku.GetBuddies(x.first, x.second);
+    boost::array<Position, NUM_BUDDIES> buddies = sudoku.GetBuddies(x);
 
     for (Index_t i = 0; i < NUM_BUDDIES; ++i) {
-        Index_t row = buddies[i].first, col = buddies[i].second;
-        if ((row == x.first && col == x.second) ||
-                (row == y.first && col == y.second))
+        if (buddies[i] == x || buddies[i] == y)
             continue;
 
-        if (IsBuddy(row, col, y.first, y.second)) {
+        if (IsBuddy(buddies[i], y)) {
             boost::array<Index_t, 2> values =
-                GetValuesForBivalueCell(sudoku.GetCell(x.first, x.second));
+                GetValuesForBivalueCell(sudoku.GetCell(x));
             for (Index_t j = 0; j < 2; ++j) {
-                Cell cell = sudoku.GetCell(row, col);
+                Cell cell = sudoku.GetCell(buddies[i]);
                 if (cell.ExcludeCandidate(values[j])) {
-                    sudoku.SetCell(cell, row, col);
-                    changed.push_back(boost::make_tuple(row, col, values[j]));
+                    sudoku.SetCell(cell, buddies[i]);
+                    changed.push_back(boost::make_tuple(buddies[i].row,
+                                buddies[i].col, values[j]));
                     ret = true;
                 }
             }
@@ -240,25 +235,24 @@ bool EliminateCandidatesWithRemotePairEndpoints(Sudoku &sudoku,
 }
 
 void LogRemotePair(const Sudoku &sudoku,
-        std::deque<std::pair<Index_t, Index_t> >::const_iterator begin,
-        std::deque<std::pair<Index_t, Index_t> >::const_iterator end,
+        std::deque<Position>::const_iterator begin,
+        std::deque<Position>::const_iterator end,
         const std::vector<boost::tuple<Index_t, Index_t, Index_t> > &changed)
 {
     std::ostringstream changedStr, chainStr;
-    boost::array<Index_t, 2> values = GetValuesForBivalueCell(
-            sudoku.GetCell(begin->first, begin->second));
+    boost::array<Index_t, 2> values =
+        GetValuesForBivalueCell(sudoku.GetCell(*begin));
 
     Index_t cnt = 0;
-    for (std::deque<std::pair<Index_t, Index_t> >::const_iterator i = begin;
-            i != end; ++i, ++cnt) {
+    for (std::deque<Position>::const_iterator i = begin; i != end; ++i, ++cnt) {
         if (i != begin) {
             if (cnt%2 != 0)
                 chainStr << '=';
             else
                 chainStr << '-';
         }
-        chainStr << '(' << values[0] << values[1] << ")r" << i->first+1
-            << 'c' << i->second+1;
+        chainStr << '(' << values[0] << values[1] << ")r" << i->row+1
+            << 'c' << i->col+1;
     }
     for (Index_t j = 0; j < changed.size(); ++j) {
         if (j != 0)

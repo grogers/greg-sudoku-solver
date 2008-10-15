@@ -118,22 +118,23 @@ void Sudoku::SetBox(const House &house, Index_t box)
     }
 }
 
-boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> Sudoku::GetBuddies(Index_t row, Index_t col) const
+boost::array<Position, NUM_BUDDIES>
+Sudoku::GetBuddies(Index_t row, Index_t col) const
 {
-    boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> ret;
+    boost::array<Position, NUM_BUDDIES> ret;
     Index_t j = 0;
 
     for (Index_t i = 0; i < 9; ++i) {
         if (i != col &&
-                std::find(ret.data(), ret.data() + j, std::make_pair(row, i)) ==  ret.data() + j) {
-            ret[j++] = std::make_pair(row, i);
+                std::find(ret.data(), ret.data() + j, Position(row, i)) ==  ret.data() + j) {
+            ret[j++] = Position(row, i);
         }
     }
 
     for (Index_t i = 0; i < 9; ++i) {
         if (i != row &&
-                std::find(ret.data(), ret.data() + j, std::make_pair(i, col)) ==  ret.data() + j) {
-            ret[j++] = std::make_pair(i, col);
+                std::find(ret.data(), ret.data() + j, Position(i, col)) ==  ret.data() + j) {
+            ret[j++] = Position(i, col);
         }
     }
 
@@ -142,8 +143,8 @@ boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> Sudoku::GetBuddies(Index_
         Index_t irow = RowForCellInBox(boxIndex, i);
         Index_t icol = ColForCellInBox(boxIndex, i);
         if (irow != row && icol != col &&
-                std::find(ret.data(), ret.data() + j, std::make_pair(irow, icol)) ==  ret.data() + j) {
-            ret[j++] = std::make_pair(irow, icol);
+                std::find(ret.data(), ret.data() + j, Position(irow, icol)) ==  ret.data() + j) {
+            ret[j++] = Position(irow, icol);
         }
     }
 

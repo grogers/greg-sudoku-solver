@@ -13,19 +13,19 @@ namespace {
 bool SimpleColorForValue(Sudoku &, Index_t);
 DEFINE_PAIR(Color, Index_t, bool, id, parity);
 Color FlipColor(const Color &x);
-typedef std::map<std::pair<Index_t, Index_t>, Color> ColorMap;
+typedef std::map<Position, Color> ColorMap;
 void BuildColorMap(const Sudoku &, Index_t, ColorMap &);
 bool BilocationInHouse(const House &, Index_t, Index_t &, Index_t &);
-void AddConjugateCellsToColorMap(const std::pair<Index_t, Index_t> &,
-        const std::pair<Index_t, Index_t> &, ColorMap &, Index_t);
+void AddConjugateCellsToColorMap(const Position &, const Position &,
+        ColorMap &, Index_t);
 void PrintColorMap(const ColorMap &, Index_t);
 bool SimpleColorEliminations(Sudoku &sudoku, const ColorMap &, Index_t);
 bool EliminateCellsWhichSeeBothConjugates(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesItself(Sudoku &, const ColorMap &, Index_t);
 bool EliminateColorSeesAllCellsInHouse(Sudoku &, const ColorMap &, Index_t);
 std::set<Color> BuildSetOfColors(const ColorMap &);
-std::set<std::pair<Index_t, Index_t> > BuildColorCoverage(const Sudoku &,
-        const ColorMap &, const Color &, Index_t);
+std::set<Position> BuildColorCoverage(const Sudoku &, const ColorMap &,
+        const Color &, Index_t);
 }
 
 
@@ -63,12 +63,12 @@ void BuildColorMap(const Sudoku &sudoku, Index_t value, ColorMap &colors)
     for (Index_t i = 0; i < 9; ++i) {
         Index_t idx1, idx2;
         if (BilocationInHouse(sudoku.GetRow(i), value, idx1, idx2)) {
-            AddConjugateCellsToColorMap(std::make_pair(i, idx1),
-                    std::make_pair(i, idx2), colors, cnt++);
+            AddConjugateCellsToColorMap(Position(i, idx1),
+                    Position(i, idx2), colors, cnt++);
         }
         if (BilocationInHouse(sudoku.GetCol(i), value, idx1, idx2)) {
-            AddConjugateCellsToColorMap(std::make_pair(idx1, i),
-                    std::make_pair(idx2, i), colors, cnt++);
+            AddConjugateCellsToColorMap(Position(idx1, i),
+                    Position(idx2, i), colors, cnt++);
         }
         if (BilocationInHouse(sudoku.GetBox(i), value, idx1, idx2)) {
             AddConjugateCellsToColorMap(CellInBox(i, idx1), CellInBox(i, idx2),
@@ -98,8 +98,8 @@ bool BilocationInHouse(const House &house, Index_t value, Index_t &idx1,
     return cnt == 2;
 }
 
-void AddConjugateCellsToColorMap(const std::pair<Index_t, Index_t> &cell1,
-        const std::pair<Index_t, Index_t> &cell2, ColorMap &colors,
+void AddConjugateCellsToColorMap(const Position &cell1,
+        const Position &cell2, ColorMap &colors,
         Index_t colorId)
 {
     ColorMap::iterator it1 = colors.find(cell1);
@@ -136,7 +136,7 @@ void PrintColorMap(const ColorMap &colors, Index_t value)
     std::cout << "color map for value " << value << ":\n";
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
-            ColorMap::const_iterator it = colors.find(std::make_pair(i, j));
+            ColorMap::const_iterator it = colors.find(Position(i, j));
             if (it == colors.end()) {
                 std::cout << "   ";
             } else {
@@ -174,10 +174,10 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
             if (!sudoku.GetCell(i, j).IsCandidate(value) ||
-                    colors.find(std::make_pair(i, j)) != colors.end())
+                    colors.find(Position(i, j)) != colors.end())
                 continue;
 
-            boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
+            boost::array<Position, NUM_BUDDIES> buddies =
                 sudoku.GetBuddies(i, j);
 
             std::set<Color> colorsSeen;
@@ -221,7 +221,6 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
         Index_t value)
 {
     for (ColorMap::const_iterator i = colors.begin(); i != colors.end(); ++i) {
-        Index_t row = i->first.first, col = i->first.second;
         Color currColor = i->second;
 
         ColorMap::const_iterator j = i;
@@ -229,16 +228,15 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
             if (currColor != j->second)
                 continue;
 
-            if (IsBuddy(row, col, j->first.first, j->first.second)) {
-                std::vector<std::pair<Index_t, Index_t> > changed;
+            if (IsBuddy(i->first, j->first)) {
+                std::vector<Position> changed;
                 for (ColorMap::const_iterator k = colors.begin();
                         k != colors.end(); ++k) {
                     if (k->second == currColor) {
-                        Index_t r = k->first.first, c = k->first.second;
-                        Cell cell = sudoku.GetCell(r, c);
+                        Cell cell = sudoku.GetCell(k->first);
                         if (cell.ExcludeCandidate(value)) {
-                            sudoku.SetCell(cell, r, c);
-                            changed.push_back(std::make_pair(r, c));
+                            sudoku.SetCell(cell, k->first);
+                            changed.push_back(k->first);
                         }
                     }
                 }
@@ -249,8 +247,8 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
                 for (Index_t k = 0; k != changed.size(); ++k) {
                     if (k != 0)
                         sstr << ", ";
-                    sstr << 'r' << changed[k].first+1 << 'c'
-                        << changed[k].second+1 << '#' << value;
+                    sstr << 'r' << changed[k].row+1 << 'c'
+                        << changed[k].col+1 << '#' << value;
                 }
 
                 Log(Info, "simple colors (color sees itself) ==> %s\n",
@@ -291,18 +289,17 @@ std::set<Color> BuildSetOfColors(const ColorMap &colors)
  * that see each other, so no buddies of any cell of a certain color will lie
  * on that color.
  */
-std::set<std::pair<Index_t, Index_t> >
-BuildColorCoverage(const Sudoku &sudoku, const ColorMap &colorMap,
-        const Color &color)
+std::set<Position> BuildColorCoverage(const Sudoku &sudoku,
+        const ColorMap &colorMap, const Color &color)
 {
-    std::set<std::pair<Index_t, Index_t> > ret;
+    std::set<Position> ret;
     typedef ColorMap::const_iterator CIter;
     for (CIter i = colorMap.begin(); i != colorMap.end(); ++i) {
         if (i->second != color)
             continue;
 
-        boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
-            sudoku.GetBuddies(i->first.first, i->first.second);
+        boost::array<Position, NUM_BUDDIES> buddies =
+            sudoku.GetBuddies(i->first);
         for (Index_t j = 0; j < NUM_BUDDIES; ++j)
             ret.insert(buddies[j]);
     }

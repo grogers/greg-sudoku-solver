@@ -16,8 +16,8 @@ void LogUniqueRectangle(Index_t, Index_t, Index_t, Index_t, Index_t, Index_t,
         Index_t, const std::vector<boost::tuple<Index_t, Index_t, Index_t> > &);
 bool GetValuesOfUniqueRectangleType25(boost::array<Index_t, 2> &, Index_t &,
         const boost::array<Cell, 4> &, Index_t, Index_t);
-bool EliminateValueFromBuddiesOfCells(Sudoku &, Index_t, Index_t, Index_t,
-        Index_t, Index_t,
+bool EliminateValueFromBuddiesOfCells(Sudoku &, const Position &,
+        const Position &, Index_t,
         std::vector<boost::tuple<Index_t, Index_t, Index_t> > &);
 }
 
@@ -149,39 +149,32 @@ bool UniqueRectangleType25(Sudoku &sudoku, Index_t row1, Index_t col1, Index_t r
     std::vector<boost::tuple<Index_t, Index_t, Index_t> > changed;
     bool ret = false;
 
-    boost::array<std::pair<Index_t, Index_t>, 2> cornerWith3Cells;
+    boost::array<Position, 2> cornerWith3Cells;
 
     for (Index_t i = 0; i < 2; ++i) {
         switch (cellsWith3Candidates[i]) {
             case 0:
-                cornerWith3Cells[i].first = row1;
-                cornerWith3Cells[i].second = col1;
+                cornerWith3Cells[i] = Position(row1, col1);
                 break;
             case 1:
-                cornerWith3Cells[i].first = row1;
-                cornerWith3Cells[i].second = col2;
+                cornerWith3Cells[i] = Position(row1, col2);
                 break;
             case 2:
-                cornerWith3Cells[i].first = row2;
-                cornerWith3Cells[i].second = col1;
+                cornerWith3Cells[i] = Position(row2, col1);
                 break;
             case 3:
-                cornerWith3Cells[i].first = row2;
-                cornerWith3Cells[i].second = col2;
+                cornerWith3Cells[i] = Position(row2, col2);
                 break;
             default:
                 assert(false);
         }
     }
 
-    if (EliminateValueFromBuddiesOfCells(sudoku,
-                cornerWith3Cells[0].first,
-                cornerWith3Cells[0].second,
-                cornerWith3Cells[1].first,
-                cornerWith3Cells[1].second, extraValue, changed)) {
+    if (EliminateValueFromBuddiesOfCells(sudoku, cornerWith3Cells[0],
+                cornerWith3Cells[1], extraValue, changed)) {
         Index_t type = 2;
-        if (cornerWith3Cells[0].first != cornerWith3Cells[1].first &&
-                cornerWith3Cells[0].second != cornerWith3Cells[1].second)
+        if (cornerWith3Cells[0].row != cornerWith3Cells[1].row &&
+                cornerWith3Cells[0].col != cornerWith3Cells[1].col)
             type = 5;
 
         LogUniqueRectangle(type, row1, col1, row2, col2, values[0], values[1],
@@ -264,24 +257,23 @@ bool GetValuesOfUniqueRectangleType25(boost::array<Index_t, 2> &values,
     return corners[corner2].IsCandidate(extraVal);
 }
 
-bool EliminateValueFromBuddiesOfCells(Sudoku &sudoku, Index_t row1,
-        Index_t col1, Index_t row2, Index_t col2, Index_t value,
+bool EliminateValueFromBuddiesOfCells(Sudoku &sudoku, const Position &cell1,
+        const Position &cell2, Index_t value,
         std::vector<boost::tuple<Index_t, Index_t, Index_t> > &changed)
 {
     bool ret = false;
-    boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
-        sudoku.GetBuddies(row1, col1);
+    boost::array<Position, NUM_BUDDIES> buddies = sudoku.GetBuddies(cell1);
 
     for (Index_t i = 0; i < NUM_BUDDIES; ++i) {
-        Index_t row = buddies[i].first, col = buddies[i].second;
-        if ((row == row1 && col == col1) || (row == row2 && col == col2))
+        if (buddies[i] == cell1 || buddies[i] == cell2)
             continue;
 
-        if (IsBuddy(row, col, row2, col2)) {
-            Cell cell = sudoku.GetCell(row, col);
+        if (IsBuddy(buddies[i], cell2)) {
+            Cell cell = sudoku.GetCell(buddies[i]);
             if (cell.ExcludeCandidate(value)) {
-                sudoku.SetCell(cell, row, col);
-                changed.push_back(boost::make_tuple(row, col, value));
+                sudoku.SetCell(cell, buddies[i]);
+                changed.push_back(boost::make_tuple(buddies[i].row,
+                            buddies[i].col, value));
                 ret = true;
             }
         }

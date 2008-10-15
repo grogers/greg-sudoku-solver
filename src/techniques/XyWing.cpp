@@ -17,17 +17,16 @@ bool XyWing(Sudoku &sudoku)
             if (sudoku.GetCell(i, j).NumCandidates() != 2)
                 continue;
 
-            boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> buddies =
+            boost::array<Position, NUM_BUDDIES> buddies =
                 sudoku.GetBuddies(i, j);
 
-            boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES>::const_iterator it0, it1;
+            boost::array<Position, NUM_BUDDIES>::const_iterator it0, it1;
             for (it0 = buddies.begin(); it0 != buddies.end(); ++it0) {
-                if (sudoku.GetCell(it0->first, it0->second).NumCandidates() != 2)
+                if (sudoku.GetCell(*it0).NumCandidates() != 2)
                     continue;
                 for (it1 = it0 + 1; it1 < buddies.end(); ++it1) {
-                    if (XyWingForCells(sudoku, i, j,
-                                it0->first, it0->second, it1->first,
-                                it1->second)) {
+                    if (XyWingForCells(sudoku, i, j, it0->row, it0->col,
+                                it1->row, it1->col)) {
                         return true;
                     }
                 }
@@ -94,17 +93,17 @@ bool XyWingForCells(Sudoku &sudoku, Index_t xyRow, Index_t xyCol,
         return false;
 
     // look for eliminations based on the found cells xz and yz and the value z
-    boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> xzBuddies =
+    boost::array<Position, NUM_BUDDIES> xzBuddies =
         sudoku.GetBuddies(xzRow, xzCol);
 
     bool ret = false;
     std::vector<Index_t> changed;
     for (Index_t i = 0; i < NUM_BUDDIES; ++i) {
-        if (IsBuddy(xzBuddies[i].first, xzBuddies[i].second, yzRow, yzCol) &&
-                (xzBuddies[i].first != yzRow || xzBuddies[i].second != yzCol)) {
-            Cell cell = sudoku.GetCell(xzBuddies[i].first, xzBuddies[i].second);
+        if (IsBuddy(xzBuddies[i].row, xzBuddies[i].col, yzRow, yzCol) &&
+                (xzBuddies[i].row != yzRow || xzBuddies[i].col != yzCol)) {
+            Cell cell = sudoku.GetCell(xzBuddies[i]);
             if (cell.ExcludeCandidate(z)) {
-                sudoku.SetCell(cell, xzBuddies[i].first, xzBuddies[i].second);
+                sudoku.SetCell(cell, xzBuddies[i]);
                 changed.push_back(i);
                 ret = true;
             }
@@ -116,8 +115,8 @@ bool XyWingForCells(Sudoku &sudoku, Index_t xyRow, Index_t xyCol,
         for (Index_t i = 0; i < changed.size(); ++i) {
             if (i != 0)
                 changedStr << ", ";
-            changedStr << 'r' << xzBuddies[changed[i]].first+1 << 'c'
-                << xzBuddies[changed[i]].second+1 << '#' << z;
+            changedStr << 'r' << xzBuddies[changed[i]].row+1 << 'c'
+                << xzBuddies[changed[i]].col+1 << '#' << z;
         }
 
         Log(Info, "xy-wing (%d=%d)r%dc%d-(%d=%d)r%dc%d-(%d=%d)r%dc%d ==> %s\n",

@@ -3,6 +3,7 @@
 
 #include "Cell.hpp"
 #include "Techniques.hpp"
+#include "DefinePair.hpp"
 
 #include <boost/array.hpp>
 #include <vector>
@@ -14,6 +15,7 @@
 typedef boost::array<Cell, 9> House;
 
 const Index_t NUM_BUDDIES = 20;
+DEFINE_PAIR(Position, Index_t, Index_t, row, col);
 
 class Sudoku
 {
@@ -25,9 +27,12 @@ class Sudoku
         void Reset();
 
         Cell GetCell(Index_t row, Index_t col) const;
+        Cell GetCell(const Position &) const;
         void SetCell(const Cell &, Index_t row, Index_t col);
+        void SetCell(const Cell &, const Position &);
 
         void CrossHatch(Index_t row, Index_t col);
+        void CrossHatch(const Position &);
 
         House GetRow(Index_t row) const;
         void SetRow(const House &, Index_t row);
@@ -38,7 +43,8 @@ class Sudoku
         House GetBox(Index_t box) const;
         void SetBox(const House &, Index_t box);
 
-        boost::array<std::pair<Index_t, Index_t>, NUM_BUDDIES> GetBuddies(Index_t, Index_t) const;
+        boost::array<Position, NUM_BUDDIES> GetBuddies(Index_t, Index_t) const;
+        boost::array<Position, NUM_BUDDIES> GetBuddies(const Position &) const;
 
         bool IsUnique();
 
@@ -67,6 +73,10 @@ class Sudoku
 };
 
 bool IsBuddy(Index_t row1, Index_t col1, Index_t row2, Index_t col2);
+inline bool IsBuddy(const Position &cell1, const Position &cell2)
+{
+    return IsBuddy(cell1.row, cell1.col, cell2.row, cell2.col);
+}
 
 inline Sudoku::Sudoku()
 {
@@ -83,10 +93,27 @@ inline Cell Sudoku::GetCell(Index_t row, Index_t col) const
     return _board[row][col];
 }
 
+inline Cell Sudoku::GetCell(const Position &x) const
+{
+    return _board[x.row][x.col];
+}
+
 inline void Sudoku::SetCell(const Cell &cell, Index_t row, Index_t col)
 {
     _board[row][col] = cell;
 }
+
+inline void Sudoku::SetCell(const Cell &cell, const Position &x)
+{
+    _board[x.row][x.col] = cell;
+}
+
+inline boost::array<Position, NUM_BUDDIES>
+Sudoku::GetBuddies(const Position &x) const
+{
+    return GetBuddies(x.row, x.col);
+}
+
 
 inline Index_t BoxIndex(Index_t row, Index_t col)
 {
@@ -103,9 +130,9 @@ inline Index_t ColForCellInBox(Index_t box, Index_t pos)
     return (box%3)*3 + pos%3;
 }
 
-inline std::pair<Index_t, Index_t> CellInBox(Index_t box, Index_t pos)
+inline Position CellInBox(Index_t box, Index_t pos)
 {
-    return std::make_pair(RowForCellInBox(box, pos), ColForCellInBox(box, pos));
+    return Position(RowForCellInBox(box, pos), ColForCellInBox(box, pos));
 }
 
 
