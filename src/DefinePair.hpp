@@ -8,12 +8,7 @@
         classname() {} \
         classname(const T1 &a, const T2 &b) : name1(a), name2(b) {} \
         classname(const classname &x) : name1(x.name1), name2(x.name2) {} \
-        classname &operator=(const classname &x) \
-        { \
-            name1 = x.name1; \
-            name2 = x.name2; \
-            return *this; \
-        } \
+        /*classname &operator=(const classname &x) = default; */\
         T1 name1; \
         T2 name2; \
         bool operator==(const classname &x) const \

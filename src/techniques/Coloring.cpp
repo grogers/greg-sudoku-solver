@@ -11,7 +11,7 @@
 
 namespace {
 DEFINE_PAIR(Color, Index_t, bool, id, parity);
-Color FlipColor(const Color &x);
+Color ParityFlipped(const Color &x);
 typedef std::map<Position, Color> ColorMap;
 bool SimpleColorForValue(Sudoku &, Index_t);
 bool MultiColorForValue(Sudoku &, Index_t);
@@ -32,6 +32,11 @@ bool ColorSeesAllOpenCellsInHouse(const Sudoku &,
         const boost::array<Position, 9> &, const std::set<Position> &, Index_t);
 void RemoveColor(Sudoku &, const ColorMap &, const Color &, Index_t,
         std::vector<Position> &);
+bool EliminateColorSeesConjugateColor(Sudoku &, const ColorMap &, Index_t);
+bool AnyConjugateColorInCoverage(const ColorMap &, const std::set<Position> &);
+std::string ChangedCellsToString(const std::vector<Position> &, Index_t);
+bool EliminateCellsWhichSeeColorWing(Sudoku &, const ColorMap &, Index_t);
+std::set<std::pair<Color, Color> > BuildColorLinks(const ColorMap &);
 }
 
 
@@ -194,11 +199,10 @@ bool MultiColorEliminations(Sudoku &sudoku, const ColorMap &colors,
         Index_t value)
 {
     bool ret = false;
-    // two ways for multi colors:
-
-    // both parities of a color, A+ and A- see a single color B+, then B+ can't be true
-
-    // two colors, A+ and B+ see each other, then any cell that sees A- and B- can't be true
+    if (EliminateColorSeesConjugateColor(sudoku, colors, value))
+        ret = true;
+    if (EliminateCellsWhichSeeColorWing(sudoku, colors, value))
+        ret = true;
     return ret;
 }
 
@@ -206,7 +210,7 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
         const ColorMap &colors, Index_t value)
 {
     bool ret = false;
-    std::vector<std::pair<Index_t, Index_t> > changed;
+    std::vector<Position> changed;
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
             if (!sudoku.GetCell(i, j).IsCandidate(value) ||
@@ -229,7 +233,7 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
                     Cell cell = sudoku.GetCell(i, j);
                     if (cell.ExcludeCandidate(value)) {
                         sudoku.SetCell(cell, i, j);
-                        changed.push_back(std::make_pair(i, j));
+                        changed.push_back(Position(i, j));
                         ret = true;
                     }
                 }
@@ -238,16 +242,9 @@ bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
     }
 
     if (ret) {
-        std::ostringstream sstr;
-        for (Index_t i = 0; i != changed.size(); ++i) {
-            if (i != 0)
-                sstr << ", ";
-            sstr << 'r' << changed[i].first+1 << 'c' << changed[i].first+1
-                << '#' << value;
-        }
-
+        std::string str = ChangedCellsToString(changed, value);
         Log(Info, "simple colors (cell sees both colors) ==> %s\n",
-                sstr.str().c_str());
+                str.c_str());
     }
 
     return ret;
@@ -268,16 +265,9 @@ bool EliminateColorSeesItself(Sudoku &sudoku, const ColorMap &colors,
 
                 assert(changed.size() > 0);
 
-                std::ostringstream sstr;
-                for (Index_t k = 0; k != changed.size(); ++k) {
-                    if (k != 0)
-                        sstr << ", ";
-                    sstr << 'r' << changed[k].row+1 << 'c'
-                        << changed[k].col+1 << '#' << value;
-                }
-
+                std::string str = ChangedCellsToString(changed, value);
                 Log(Info, "simple colors (color sees itself) ==> %s\n",
-                        sstr.str().c_str());
+                        str.c_str());
                 return true;
             }
         }
@@ -310,16 +300,9 @@ bool EliminateColorSeesAllCellsInHouse(Sudoku &sudoku, const ColorMap &colors,
     }
 
     if (changed.size() > 0) {
-        std::ostringstream sstr;
-        for (Index_t i = 0; i != changed.size(); ++i) {
-            if (i != 0)
-                sstr << ", ";
-            sstr << 'r' << changed[i].row+1 << 'c'
-                << changed[i].col+1 << '#' << value;
-        }
-
+        std::string str = ChangedCellsToString(changed, value);
         Log(Info, "simple colors (color sees all open cells in house) ==> %s\n",
-                sstr.str().c_str());
+                str.c_str());
         return true;
     } else {
         return false;
@@ -387,5 +370,119 @@ void RemoveColor(Sudoku &sudoku, const ColorMap &colorMap, const Color &color,
         }
     }
 }
+
+bool EliminateColorSeesConjugateColor(Sudoku &sudoku, const ColorMap &colors,
+        Index_t value)
+{
+    std::set<Color> colorSet = BuildSetOfColors(colors);
+    std::vector<Position> changed;
+
+    for (std::set<Color>::const_iterator it = colorSet.begin();
+            it != colorSet.end(); ++it) {
+        std::set<Position> coverage = BuildColorCoverage(sudoku, colors, *it);
+        if (AnyConjugateColorInCoverage(colors, coverage))
+            RemoveColor(sudoku, colors, *it, value, changed);
+    }
+
+    if (changed.size() > 0) {
+        std::string str = ChangedCellsToString(changed, value);
+        Log(Info, "multi colors (color sees conjugate colors) ==> %s\n",
+                str.c_str());
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool AnyConjugateColorInCoverage(const ColorMap &colorMap,
+        const std::set<Position> &coverage)
+{
+    std::set<Color> colorsSeen;
+    for (ColorMap::const_iterator it = colorMap.begin();
+            it != colorMap.end(); ++it) {
+        if (coverage.find(it->first) != coverage.end())
+            colorsSeen.insert(it->second);
+    }
+
+    for (std::set<Color>::const_iterator it = colorsSeen.begin();
+            it != colorsSeen.end(); ++it) {
+        if (colorsSeen.find(ParityFlipped(*it)) != colorsSeen.end())
+            return true;
+    }
+    return false;
+}
+
+std::string ChangedCellsToString(const std::vector<Position> &changed,
+        Index_t value)
+{
+    std::ostringstream sstr;
+    for (Index_t i = 0; i != changed.size(); ++i) {
+        if (i != 0)
+            sstr << ", ";
+        sstr << 'r' << changed[i].row+1 << 'c'
+            << changed[i].col+1 << '#' << value;
+    }
+    return sstr.str();
+}
+
+/**
+ * Calling a "color wing" where A+ and B+ see each other, then any cells which
+ * see A- and B- cannot be true
+ */
+bool EliminateCellsWhichSeeColorWing(Sudoku &sudoku,
+        const ColorMap &colors, Index_t value)
+{
+    std::set<std::pair<Color, Color> > links = BuildColorLinks(colors);
+    std::vector<Position> changed;
+    for (std::set<std::pair<Color, Color> >::const_iterator i = links.begin();
+            i != links.end(); ++i) {
+        std::set<Position> coverageFirst =
+            BuildColorCoverage(sudoku, colors, i->first);
+        std::set<Position> coverageSecond =
+            BuildColorCoverage(sudoku, colors, i->second);
+
+        for (std::set<Position>::const_iterator j = coverageFirst.begin();
+                j != coverageFirst.end(); ++j) {
+            if (coverageSecond.find(*j) != coverageSecond.end()) {
+                Cell cell = sudoku.GetCell(*j);
+                if (cell.ExcludeCandidate(value)) {
+                    sudoku.SetCell(cell, *j);
+                    changed.push_back(*j);
+                }
+            }
+        }
+    }
+
+    if (changed.size() > 0) {
+        std::string str = ChangedCellsToString(changed, value);
+        Log(Info, "multi colors (cell sees color wing) ==> %s\n",
+                str.c_str());
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Note that because set iterators are const (or are undefined when modified),
+ * this doesn't return the actual links, but the parity flipped version. Any
+ * cell which sees moth these colors must be false.
+ */
+std::set<std::pair<Color, Color> > BuildColorLinks(const ColorMap &colors)
+{
+    std::set<std::pair<Color, Color> > ret;
+    for (ColorMap::const_iterator i = colors.begin(); i != colors.end(); ++i) {
+        for (ColorMap::const_iterator j = ++ColorMap::const_iterator(i);
+                j != colors.end(); ++j) {
+            if (i->second != ParityFlipped(j->second) &&
+                    IsBuddy(i->first, j->first)) {
+                ret.insert(std::make_pair(ParityFlipped(i->second),
+                            ParityFlipped(j->second)));
+            }
+        }
+    }
+    return ret;
+}
+
 
 }
