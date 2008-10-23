@@ -161,7 +161,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = test techniques
 SOURCES = Logging.cpp Sudoku.cpp Cell.cpp \
-	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp DefinePair.hpp
+	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp DefineGroup.hpp
 
 LDADD = techniques/libtechniques.a
 solver_SOURCES = solver.cpp ${SOURCES}

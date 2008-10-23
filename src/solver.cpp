@@ -231,6 +231,8 @@ void ParseOptions(const list<string> &cmdline, SolverOptions &opts)
                     opts.techniques.push_back(&MultiColor);
                 } else if (*tok == "rp") {
                     opts.techniques.push_back(&RemotePair);
+                } else if (*tok == "3dmc") {
+                    opts.techniques.push_back(&MedusaColor);
                 } else if (*tok == "ur") {
                     opts.techniques.push_back(&UniqueRectangle);
                 } else if (*tok == "fif") {
@@ -284,6 +286,7 @@ void usage()
        "        xyw                 xy-wing\n"
        "        sc                  simple colors\n"
        "        mc                  multi colors\n"
+       "        3dmc                3d medusa colors\n"
        "        xyzw                xyz-wing\n"
        "        rp                  remote pair\n"
        "        ur                  unique rectangle\n"

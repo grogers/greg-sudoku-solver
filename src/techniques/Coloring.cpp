@@ -1,6 +1,6 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
-#include "DefinePair.hpp"
+#include "Coloring.hpp"
 
 #include <climits>
 #include <map>
@@ -10,8 +10,6 @@
 #include <sstream>
 
 namespace {
-DEFINE_PAIR(Color, Index_t, bool, id, parity);
-Color ParityFlipped(const Color &x);
 typedef std::map<Position, Color> ColorMap;
 bool SimpleColorForValue(Sudoku &, Index_t);
 bool MultiColorForValue(Sudoku &, Index_t);
@@ -64,13 +62,6 @@ bool MultiColor(Sudoku &sudoku)
 
 
 namespace {
-
-Color ParityFlipped(const Color &x)
-{
-    Color ret(x);
-    ret.parity = !ret.parity;
-    return ret;
-}
 
 bool SimpleColorForValue(Sudoku &sudoku, Index_t value)
 {

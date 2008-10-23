@@ -3,7 +3,7 @@
 
 #include "Cell.hpp"
 #include "Techniques.hpp"
-#include "DefinePair.hpp"
+#include "DefineGroup.hpp"
 
 #include <boost/array.hpp>
 #include <vector>
