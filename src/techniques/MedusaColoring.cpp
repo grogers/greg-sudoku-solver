@@ -166,24 +166,24 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
         colorId = (++colorView.rbegin())->color.id + 1;
     }
 
-    ColorContainer::nth_index<0>::type &positionView = colors.get<0>();
+    const ColorContainer::nth_index<0>::type &positionView = colors.get<0>();
     ColorContainer::nth_index<0>::type::iterator
         it1 = positionView.find(ColoredCandidate(pos1, val1, Color())),
         it2 = positionView.find(ColoredCandidate(pos2, val2, Color()));
 
     if (it1 == positionView.end()) {
         if (it2 == positionView.end()) {
-            positionView.insert(
+            colors.insert(
                     ColoredCandidate(pos1, val1, Color(colorId, false)));
-            positionView.insert(
+            colors.insert(
                     ColoredCandidate(pos2, val2, Color(colorId, true)));
         } else {
-            positionView.insert(
+            colors.insert(
                     ColoredCandidate(pos1, val1, ParityFlipped(it2->color)));
         }
     } else {
         if (it2 == positionView.end()) {
-            positionView.insert(
+            colors.insert(
                     ColoredCandidate(pos2, val2, ParityFlipped(it1->color)));
         } else {
             Index_t oldColorId = it1->color.id;
@@ -199,7 +199,7 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
                             (i->color.parity != flipParity)));
                 Iter tmp = i++;
                 colorView.erase(tmp);
-                positionView.insert(tmpCand);
+                colors.insert(tmpCand);
             }
         }
     }
