@@ -56,20 +56,26 @@ typedef mi::multi_index_container<
         >
     >
 > ColorContainer;
+typedef ColorContainer::nth_index<0>::type PositionView;
+typedef ColorContainer::nth_index<1>::type ColorView;
 
 ColorContainer BuildMedusaColors(const Sudoku &);
 boost::tuple<bool, Index_t, Index_t> FindBilocation(const House &, Index_t);
 boost::tuple<bool, Index_t, Index_t> FindBivalue(const Cell &);
 void AddConjugates(ColorContainer &, const Position &, Index_t,
         const Position &, Index_t);
-void PrintColorContainer(const ColorContainer &);
+void PrintColorContainer(const PositionView &);
 bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &);
-bool EliminateCandidatesThatSeeConjugates(Sudoku &, const ColorContainer &);
-std::set<Color> BuildColorsCandidateCanSee(const Sudoku &,
-        const ColorContainer &, const ColoredCandidate &);
-bool EliminateColorThatSeesItself(Sudoku &, const ColorContainer &);
-
+bool EliminateCandidatesThatSeeConjugates(Sudoku &, const PositionView &);
+std::set<Color> BuildColorsCandidateCanSee(const Sudoku &, const PositionView &,
+        const ColoredCandidate &);
+bool EliminateColorThatSeesItself(Sudoku &, const ColorView &);
 std::string ChangedCandidatesToString(const std::vector<ColoredCandidate> &);
+std::set<Color> GetColorsInContainer(const ColorView &);
+bool ColorSeesItself(const ColorView &, const Color &);
+bool IsWeaklyLinked(const ColoredCandidate &, const ColoredCandidate &);
+void RemoveColor(Sudoku &, const ColorView &, const Color &,
+        std::vector<ColoredCandidate> &);
 }
 
 
@@ -78,12 +84,10 @@ bool MedusaColor(Sudoku &sudoku)
     Log(Trace, "searching for 3d medusa color eliminations\n");
 
     ColorContainer colors = BuildMedusaColors(sudoku);
-
     /*
     sudoku.Output(std::cout);
-    PrintColorContainer(colors);
+    PrintColorContainer(colors.get<0>());
     */
-
     return MedusaColorEliminations(sudoku, colors);
 }
 
@@ -178,13 +182,13 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
         const Position &pos2, Index_t val2)
 {
     Index_t colorId = 0;
-    ColorContainer::nth_index<1>::type &colorView = colors.get<1>();
+    ColorView &colorView = colors.get<1>();
     if (colorView.rbegin() != colorView.rend()) {
         colorId = (++colorView.rbegin())->color.id + 1;
     }
 
-    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
-    ColorContainer::nth_index<0>::type::iterator
+    const PositionView &posView = colors.get<0>();
+    PositionView::iterator
         it1 = posView.find(ColoredCandidate(pos1, val1)),
         it2 = posView.find(ColoredCandidate(pos2, val2));
 
@@ -208,15 +212,16 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
 
             if (oldColorId != newColorId) {
                 bool flipParity = (it1->color.parity == it2->color.parity);
-                typedef ColorContainer::nth_index<1>::type::iterator Iter;
                 // color parity orders false before true for operator<
-                Iter first = colorView.lower_bound(Color(oldColorId, false));
-                Iter last = colorView.upper_bound(Color(oldColorId, true));
+                ColorView::iterator first =
+                    colorView.lower_bound(Color(oldColorId, false));
+                ColorView::iterator last =
+                    colorView.upper_bound(Color(oldColorId, true));
 
-                for (Iter i = first; i != last;) {
+                for (ColorView::iterator i = first; i != last;) {
                     ColoredCandidate tmpCand(i->pos, i->value,
                             Color(newColorId, (i->color.parity != flipParity)));
-                    Iter tmp = i++;
+                    ColorView::iterator tmp = i++;
                     colorView.erase(tmp);
                     colors.insert(tmpCand);
                 }
@@ -225,11 +230,9 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
     }
 }
 
-void PrintColorContainer(const ColorContainer &colors)
+void PrintColorContainer(const PositionView &posView)
 {
     std::cout << "3D Colors:\n";
-    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
-
     for (Index_t val = 1; val <= 9; ++val) {
         std::cout << "value " << val << ":\n";
         for (Index_t i = 0; i < 9; ++i) {
@@ -239,7 +242,7 @@ void PrintColorContainer(const ColorContainer &colors)
                 if (j%3 == 0 && j != 0)
                     std::cout << "| ";
 
-                ColorContainer::nth_index<0>::type::iterator it =
+                PositionView::iterator it =
                     posView.find(ColoredCandidate(i, j, val));
                 if (it == posView.end()) {
                     std::cout << "    ";
@@ -257,19 +260,18 @@ void PrintColorContainer(const ColorContainer &colors)
 bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &colors)
 {
     bool ret = false;
-    if (EliminateCandidatesThatSeeConjugates(sudoku, colors))
+    if (EliminateCandidatesThatSeeConjugates(sudoku, colors.get<0>()))
         ret = true;
-    if (EliminateColorThatSeesItself(sudoku, colors))
+    if (EliminateColorThatSeesItself(sudoku, colors.get<1>()))
         ret = true;
     return ret;
 }
 
 bool EliminateCandidatesThatSeeConjugates(Sudoku &sudoku,
-        const ColorContainer &colors)
+        const PositionView &posView)
 {
     bool ret = false;
     std::vector<ColoredCandidate> changed;
-    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
 
     for (Index_t i = 0; i < 9; ++i) {
         for (Index_t j = 0; j < 9; ++j) {
@@ -285,7 +287,7 @@ bool EliminateCandidatesThatSeeConjugates(Sudoku &sudoku,
                     continue;
 
                 std::set<Color> colorsSeen =
-                    BuildColorsCandidateCanSee(sudoku, colors, cand);
+                    BuildColorsCandidateCanSee(sudoku, posView, cand);
 
                 for (std::set<Color>::const_iterator it = colorsSeen.begin();
                         it != colorsSeen.end(); ++it) {
@@ -313,19 +315,17 @@ bool EliminateCandidatesThatSeeConjugates(Sudoku &sudoku,
 }
 
 std::set<Color> BuildColorsCandidateCanSee(const Sudoku &sudoku,
-        const ColorContainer &colors,
+        const PositionView &posView,
         const ColoredCandidate &cand)
 {
     std::set<Color> ret;
-
-    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
 
     std::vector<Index_t> values = CandidatesForCell(sudoku.GetCell(cand.pos));
     for (Index_t i = 0; i < values.size(); ++i) {
         if (values[i] == cand.value)
             continue;
 
-        ColorContainer::nth_index<0>::type::iterator it =
+        PositionView::iterator it =
             posView.find(ColoredCandidate(cand.pos, values[i]));
         if (it != posView.end())
             ret.insert(it->color);
@@ -336,7 +336,7 @@ std::set<Color> BuildColorsCandidateCanSee(const Sudoku &sudoku,
         if (!sudoku.GetCell(buddies[i]).IsCandidate(cand.value))
             continue;
 
-        ColorContainer::nth_index<0>::type::iterator it =
+        PositionView::iterator it =
             posView.find(ColoredCandidate(buddies[i], cand.value));
         if (it != posView.end())
             ret.insert(it->color);
@@ -357,11 +357,73 @@ std::string ChangedCandidatesToString(const std::vector<ColoredCandidate> &chang
     return sstr.str();
 }
 
-bool EliminateColorThatSeesItself(Sudoku &sudoku, const ColorContainer &colors)
+bool EliminateColorThatSeesItself(Sudoku &sudoku, const ColorView &colorView)
 {
     bool ret = false;
 
+    std::set<Color> colorsAvail = GetColorsInContainer(colorView);
+    for (std::set<Color>::iterator it = colorsAvail.begin();
+            it != colorsAvail.end(); ++it) {
+        if (ColorSeesItself(colorView, *it)) {
+            std::vector<ColoredCandidate> changed;
+            RemoveColor(sudoku, colorView, *it, changed);
+
+            if (changed.size() > 0) {
+                std::string str = ChangedCandidatesToString(changed);
+                Log(Info, "3d medusa colors (color sees itself) ==> %s\n",
+                        str.c_str());
+                ret = true;
+            }
+        }
+    }
+
     return ret;
 }
+
+std::set<Color> GetColorsInContainer(const ColorView &colorView)
+{
+    std::set<Color> ret;
+    for (ColorView::iterator i = colorView.begin(); i != colorView.end(); ++i) {
+        ret.insert(i->color);
+    }
+    return ret;
+}
+
+bool IsWeaklyLinked(const ColoredCandidate &cand1,
+        const ColoredCandidate &cand2)
+{
+    return (cand1.pos == cand2.pos) ||
+        (IsBuddy(cand1.pos, cand2.pos) && cand1.value == cand2.value);
+}
+
+bool ColorSeesItself(const ColorView &colorView, const Color &color)
+{
+    ColorView::iterator first, last;
+    boost::tie(first, last) = colorView.equal_range(color);
+
+    for (ColorView::iterator i = first; i != last; ++i) {
+        for (ColorView::iterator j = ++ColorView::iterator(i); j != last; ++j) {
+            if (IsWeaklyLinked(*i, *j))
+                return true;
+        }
+    }
+    return false;
+}
+
+void RemoveColor(Sudoku &sudoku, const ColorView &colorView,
+        const Color &color, std::vector<ColoredCandidate> &changed)
+{
+    ColorView::iterator first, last;
+    boost::tie(first, last) = colorView.equal_range(color);
+
+    for (ColorView::iterator i = first; i != last; ++i) {
+        Cell cell = sudoku.GetCell(i->pos);
+        if (cell.ExcludeCandidate(i->value)) {
+            sudoku.SetCell(cell, i->pos);
+            changed.push_back(*i);
+        }
+    }
+}
+
 
 }
