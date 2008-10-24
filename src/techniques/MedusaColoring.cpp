@@ -77,6 +77,9 @@ bool IsWeaklyLinked(const ColoredCandidate &, const ColoredCandidate &);
 void RemoveColor(Sudoku &, const ColorView &, const Color &,
         std::vector<ColoredCandidate> &);
 bool EliminateColorsThatSeeConjugates(Sudoku &, const ColorContainer &);
+std::set<ColoredCandidate, PositionValueComp> BuildColorCoverage(const Sudoku &,
+        const ColorContainer &, const Color &);
+bool AnyConjugateColorInCoverage(const std::set<ColoredCandidate, PositionValueComp> &);
 }
 
 
@@ -431,11 +434,94 @@ void RemoveColor(Sudoku &sudoku, const ColorView &colorView,
     }
 }
 
-bool EliminateColorsThatSeeConjugates(Sudoku &, const ColorContainer &)
+bool EliminateColorsThatSeeConjugates(Sudoku &sudoku,
+        const ColorContainer &colors)
 {
     bool ret = false;
+    const ColorView &colorView = colors.get<1>();
+    std::set<Color> colorsAvail = GetColorsInContainer(colorView);
+
+    for (std::set<Color>::iterator it = colorsAvail.begin();
+            it != colorsAvail.end(); ++it) {
+        std::set<ColoredCandidate, PositionValueComp> coverage =
+            BuildColorCoverage(sudoku, colors, *it);
+
+        if (AnyConjugateColorInCoverage(coverage)) {
+            std::vector<ColoredCandidate> changed;
+            RemoveColor(sudoku, colorView, *it, changed);
+
+            if (changed.size() > 0) {
+                std::string str = ChangedCandidatesToString(changed);
+                Log(Info, "3d medusa colors (color sees conjugate colors) ==> %s\n",
+                        str.c_str());
+                ret = true;
+            }
+        }
+    }
 
     return ret;
 }
+
+/**
+ * @note we assume we have already found colors that see themselves, so no
+ * buddies of any candidate will be the same color.
+ */
+std::set<ColoredCandidate, PositionValueComp> BuildColorCoverage(
+        const Sudoku &sudoku, const ColorContainer &colors, const Color &color)
+{
+    std::set<ColoredCandidate, PositionValueComp> ret;
+
+    const PositionView &posView = colors.get<0>();
+    const ColorView &colorView = colors.get<1>();
+
+    ColorView::iterator first, last;
+    boost::tie(first, last) = colorView.equal_range(color);
+
+    for (ColorView::iterator it = first; it != last; ++it) {
+        std::vector<Index_t> values =
+            CandidatesForCell(sudoku.GetCell(it->pos));
+        for (Index_t i = 0; i < values.size(); ++i) {
+            if (values[i] == it->value)
+                continue;
+
+            PositionView::iterator jt =
+                posView.find(ColoredCandidate(it->pos, values[i]));
+            if (jt != posView.end())
+                ret.insert(*jt);
+        }
+
+        boost::array<Position, NUM_BUDDIES> buddies =
+            sudoku.GetBuddies(it->pos);
+        for (Index_t i = 0; i < NUM_BUDDIES; ++i) {
+            if (!sudoku.GetCell(buddies[i]).IsCandidate(it->value))
+                continue;
+
+            PositionView::iterator jt =
+                posView.find(ColoredCandidate(buddies[i], it->value));
+            if (jt != posView.end())
+                ret.insert(*jt);
+        }
+    }
+
+    return ret;
+}
+
+bool AnyConjugateColorInCoverage(const std::set<ColoredCandidate, PositionValueComp> &coverage)
+{
+    std::set<Color> colorsSeen;
+
+    for (std::set<ColoredCandidate, PositionValueComp>::iterator it = coverage.begin();
+            it != coverage.end(); ++it) {
+        colorsSeen.insert(it->color);
+    }
+
+    for (std::set<Color>::iterator it = colorsSeen.begin();
+            it != colorsSeen.end(); ++it) {
+        if (colorsSeen.find(ParityFlipped(*it)) != colorsSeen.end())
+            return true;
+    }
+    return false;
+}
+
 
 }
