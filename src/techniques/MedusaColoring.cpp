@@ -69,13 +69,14 @@ bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &);
 bool EliminateCandidatesThatSeeConjugates(Sudoku &, const PositionView &);
 std::set<Color> BuildColorsCandidateCanSee(const Sudoku &, const PositionView &,
         const ColoredCandidate &);
-bool EliminateColorThatSeesItself(Sudoku &, const ColorView &);
+bool EliminateColorsThatSeeThemselves(Sudoku &, const ColorView &);
 std::string ChangedCandidatesToString(const std::vector<ColoredCandidate> &);
 std::set<Color> GetColorsInContainer(const ColorView &);
 bool ColorSeesItself(const ColorView &, const Color &);
 bool IsWeaklyLinked(const ColoredCandidate &, const ColoredCandidate &);
 void RemoveColor(Sudoku &, const ColorView &, const Color &,
         std::vector<ColoredCandidate> &);
+bool EliminateColorsThatSeeConjugates(Sudoku &, const ColorContainer &);
 }
 
 
@@ -262,7 +263,11 @@ bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &colors)
     bool ret = false;
     if (EliminateCandidatesThatSeeConjugates(sudoku, colors.get<0>()))
         ret = true;
-    if (EliminateColorThatSeesItself(sudoku, colors.get<1>()))
+    if (EliminateColorsThatSeeThemselves(sudoku, colors.get<1>()))
+        ret = true;
+    //EliminateColorThatSeesAllCellsInHouse
+    //EliminateColorThatSeesAllCandidatesInCell
+    if (EliminateColorsThatSeeConjugates(sudoku, colors))
         ret = true;
     return ret;
 }
@@ -357,7 +362,8 @@ std::string ChangedCandidatesToString(const std::vector<ColoredCandidate> &chang
     return sstr.str();
 }
 
-bool EliminateColorThatSeesItself(Sudoku &sudoku, const ColorView &colorView)
+bool EliminateColorsThatSeeThemselves(Sudoku &sudoku,
+        const ColorView &colorView)
 {
     bool ret = false;
 
@@ -425,5 +431,11 @@ void RemoveColor(Sudoku &sudoku, const ColorView &colorView,
     }
 }
 
+bool EliminateColorsThatSeeConjugates(Sudoku &, const ColorContainer &)
+{
+    bool ret = false;
+
+    return ret;
+}
 
 }
