@@ -51,7 +51,7 @@ bool SimpleColor(Sudoku &sudoku)
 
 bool MultiColor(Sudoku &sudoku)
 {
-    Log(Trace, "searching for simple color eliminations\n");
+    Log(Trace, "searching for multi color eliminations\n");
 
     for (Index_t val = 1; val <= 9; ++val) {
         if (MultiColorForValue(sudoku, val))

@@ -26,16 +26,19 @@ const char *OrderToString(Index_t order);
 
 bool XWing(Sudoku &sudoku)
 {
+    Log(Trace, "searching for x-wings\n");
     return BasicFishWithOrder(sudoku, 2);
 }
 
 bool Swordfish(Sudoku &sudoku)
 {
+    Log(Trace, "searching for swordfish\n");
     return BasicFishWithOrder(sudoku, 3);
 }
 
 bool Jellyfish(Sudoku &sudoku)
 {
+    Log(Trace, "searching for jellyfish\n");
     return BasicFishWithOrder(sudoku, 4);
 }
 
@@ -43,7 +46,6 @@ namespace {
 
 bool BasicFishWithOrder(Sudoku &sudoku, Index_t order)
 {
-    Log(Trace, "searching for basic fish\n");
     for (Index_t val = 1; val <= 9; ++val) {
         if (RowBaseBasicFish(sudoku, val, order))
             return true;

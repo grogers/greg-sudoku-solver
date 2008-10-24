@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <functional>
+#include <set>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -27,8 +28,12 @@ struct ColoredCandidate
     ColoredCandidate() {}
     ColoredCandidate(const ColoredCandidate &x) :
         pos(x.pos), value(x.value), color(x.color) {}
-    ColoredCandidate(const Position &pos, Index_t value, Color color) :
+    ColoredCandidate(const Position &pos, Index_t value,
+            Color color = Color()) :
         pos(pos), value(value), color(color) {}
+    ColoredCandidate(Index_t row, Index_t col, Index_t value,
+            Color color = Color()) :
+        pos(Position(row, col)), value(value), color(color) {}
 };
 
 struct PositionValueComp :
@@ -57,7 +62,14 @@ boost::tuple<bool, Index_t, Index_t> FindBilocation(const House &, Index_t);
 boost::tuple<bool, Index_t, Index_t> FindBivalue(const Cell &);
 void AddConjugates(ColorContainer &, const Position &, Index_t,
         const Position &, Index_t);
+void PrintColorContainer(const ColorContainer &);
+bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &);
+bool EliminateCandidatesThatSeeConjugates(Sudoku &, const ColorContainer &);
+std::set<Color> BuildColorsCandidateCanSee(const Sudoku &,
+        const ColorContainer &, const ColoredCandidate &);
+bool EliminateColorThatSeesItself(Sudoku &, const ColorContainer &);
 
+std::string ChangedCandidatesToString(const std::vector<ColoredCandidate> &);
 }
 
 
@@ -67,7 +79,12 @@ bool MedusaColor(Sudoku &sudoku)
 
     ColorContainer colors = BuildMedusaColors(sudoku);
 
-    return false;
+    /*
+    sudoku.Output(std::cout);
+    PrintColorContainer(colors);
+    */
+
+    return MedusaColorEliminations(sudoku, colors);
 }
 
 
@@ -130,7 +147,7 @@ boost::tuple<bool, Index_t, Index_t>
             }
         }
     }
-    ret.get<0>() = true;
+    ret.get<0>() = (cnt == 2);
     return ret;
 }
 
@@ -153,7 +170,7 @@ boost::tuple<bool, Index_t, Index_t> FindBivalue(const Cell &cell)
             }
         }
     }
-    ret.get<0>() = true;
+    ret.get<0>() = (cnt == 2);
     return ret;
 }
 
@@ -166,13 +183,13 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
         colorId = (++colorView.rbegin())->color.id + 1;
     }
 
-    const ColorContainer::nth_index<0>::type &positionView = colors.get<0>();
+    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
     ColorContainer::nth_index<0>::type::iterator
-        it1 = positionView.find(ColoredCandidate(pos1, val1, Color())),
-        it2 = positionView.find(ColoredCandidate(pos2, val2, Color()));
+        it1 = posView.find(ColoredCandidate(pos1, val1)),
+        it2 = posView.find(ColoredCandidate(pos2, val2));
 
-    if (it1 == positionView.end()) {
-        if (it2 == positionView.end()) {
+    if (it1 == posView.end()) {
+        if (it2 == posView.end()) {
             colors.insert(
                     ColoredCandidate(pos1, val1, Color(colorId, false)));
             colors.insert(
@@ -182,27 +199,169 @@ void AddConjugates(ColorContainer &colors, const Position &pos1, Index_t val1,
                     ColoredCandidate(pos1, val1, ParityFlipped(it2->color)));
         }
     } else {
-        if (it2 == positionView.end()) {
+        if (it2 == posView.end()) {
             colors.insert(
                     ColoredCandidate(pos2, val2, ParityFlipped(it1->color)));
         } else {
-            Index_t oldColorId = it1->color.id;
-            Index_t newColorId = it2->color.id;
-            bool flipParity = (it1->color.parity == it2->color.parity);
-            typedef ColorContainer::nth_index<1>::type::iterator Iter;
-            // color parity orders false before true
-            Iter first = colorView.lower_bound(Color(oldColorId, false));
-            Iter last = colorView.upper_bound(Color(oldColorId, true));
+            Index_t newColorId = it1->color.id;
+            Index_t oldColorId = it2->color.id;
 
-            for (Iter i = first; i != last;) {
-                ColoredCandidate tmpCand(i->pos, i->value, Color(newColorId,
-                            (i->color.parity != flipParity)));
-                Iter tmp = i++;
-                colorView.erase(tmp);
-                colors.insert(tmpCand);
+            if (oldColorId != newColorId) {
+                bool flipParity = (it1->color.parity == it2->color.parity);
+                typedef ColorContainer::nth_index<1>::type::iterator Iter;
+                // color parity orders false before true for operator<
+                Iter first = colorView.lower_bound(Color(oldColorId, false));
+                Iter last = colorView.upper_bound(Color(oldColorId, true));
+
+                for (Iter i = first; i != last;) {
+                    ColoredCandidate tmpCand(i->pos, i->value,
+                            Color(newColorId, (i->color.parity != flipParity)));
+                    Iter tmp = i++;
+                    colorView.erase(tmp);
+                    colors.insert(tmpCand);
+                }
             }
         }
     }
+}
+
+void PrintColorContainer(const ColorContainer &colors)
+{
+    std::cout << "3D Colors:\n";
+    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
+
+    for (Index_t val = 1; val <= 9; ++val) {
+        std::cout << "value " << val << ":\n";
+        for (Index_t i = 0; i < 9; ++i) {
+            if (i%3 == 0 && i != 0)
+                std::cout << "------------+-------------+------------\n";
+            for (Index_t j = 0; j < 9; ++j) {
+                if (j%3 == 0 && j != 0)
+                    std::cout << "| ";
+
+                ColorContainer::nth_index<0>::type::iterator it =
+                    posView.find(ColoredCandidate(i, j, val));
+                if (it == posView.end()) {
+                    std::cout << "    ";
+                } else {
+                    std::cout << std::setw(2) << it->color.id;
+                    std::cout << ((it->color.parity) ? '+' : '-') << ' ';
+                }
+            }
+            std::cout << '\n';
+        }
+        std::cout << '\n';
+    }
+}
+
+bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &colors)
+{
+    bool ret = false;
+    if (EliminateCandidatesThatSeeConjugates(sudoku, colors))
+        ret = true;
+    if (EliminateColorThatSeesItself(sudoku, colors))
+        ret = true;
+    return ret;
+}
+
+bool EliminateCandidatesThatSeeConjugates(Sudoku &sudoku,
+        const ColorContainer &colors)
+{
+    bool ret = false;
+    std::vector<ColoredCandidate> changed;
+    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
+
+    for (Index_t i = 0; i < 9; ++i) {
+        for (Index_t j = 0; j < 9; ++j) {
+            if (sudoku.GetCell(i, j).HasValue())
+                continue;
+
+            std::vector<Index_t> values =
+                CandidatesForCell(sudoku.GetCell(i, j));
+
+            for (Index_t k = 0; k < values.size(); ++k) {
+                ColoredCandidate cand(i, j, values[k]);
+                if (posView.find(cand) != posView.end())
+                    continue;
+
+                std::set<Color> colorsSeen =
+                    BuildColorsCandidateCanSee(sudoku, colors, cand);
+
+                for (std::set<Color>::const_iterator it = colorsSeen.begin();
+                        it != colorsSeen.end(); ++it) {
+                    if (colorsSeen.find(ParityFlipped(*it)) !=
+                            colorsSeen.end()) {
+                        Cell cell = sudoku.GetCell(cand.pos);
+                        if (cell.ExcludeCandidate(cand.value)) {
+                            sudoku.SetCell(cell, cand.pos);
+                            changed.push_back(cand);
+                            ret = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (ret) {
+        std::string str = ChangedCandidatesToString(changed);
+        Log(Info, "3d medusa colors (candidate sees both colors) ==> %s\n",
+                str.c_str());
+    }
+
+    return ret;
+}
+
+std::set<Color> BuildColorsCandidateCanSee(const Sudoku &sudoku,
+        const ColorContainer &colors,
+        const ColoredCandidate &cand)
+{
+    std::set<Color> ret;
+
+    const ColorContainer::nth_index<0>::type &posView = colors.get<0>();
+
+    std::vector<Index_t> values = CandidatesForCell(sudoku.GetCell(cand.pos));
+    for (Index_t i = 0; i < values.size(); ++i) {
+        if (values[i] == cand.value)
+            continue;
+
+        ColorContainer::nth_index<0>::type::iterator it =
+            posView.find(ColoredCandidate(cand.pos, values[i]));
+        if (it != posView.end())
+            ret.insert(it->color);
+    }
+
+    boost::array<Position, NUM_BUDDIES> buddies = sudoku.GetBuddies(cand.pos);
+    for (Index_t i = 0; i < NUM_BUDDIES; ++i) {
+        if (!sudoku.GetCell(buddies[i]).IsCandidate(cand.value))
+            continue;
+
+        ColorContainer::nth_index<0>::type::iterator it =
+            posView.find(ColoredCandidate(buddies[i], cand.value));
+        if (it != posView.end())
+            ret.insert(it->color);
+    }
+
+    return ret;
+}
+
+std::string ChangedCandidatesToString(const std::vector<ColoredCandidate> &changed)
+{
+    std::ostringstream sstr;
+    for (Index_t i = 0; i != changed.size(); ++i) {
+        if (i != 0)
+            sstr << ", ";
+        sstr << 'r' << changed[i].pos.row+1 << 'c'
+            << changed[i].pos.col+1 << '#' << changed[i].value;
+    }
+    return sstr.str();
+}
+
+bool EliminateColorThatSeesItself(Sudoku &sudoku, const ColorContainer &colors)
+{
+    bool ret = false;
+
+    return ret;
 }
 
 }

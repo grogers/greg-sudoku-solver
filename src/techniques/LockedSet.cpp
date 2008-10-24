@@ -27,31 +27,37 @@ const char *OrderToString(Index_t);
 
 bool NakedPair(Sudoku &sudoku)
 {
+    Log(Trace, "searching for naked pairs\n");
     return NakedSetWithOrder(sudoku, 2);
 }
 
 bool NakedTriple(Sudoku &sudoku)
 {
+    Log(Trace, "searching for naked triples\n");
     return NakedSetWithOrder(sudoku, 3);
 }
 
 bool NakedQuad(Sudoku &sudoku)
 {
+    Log(Trace, "searching for naked quads\n");
     return NakedSetWithOrder(sudoku, 4);
 }
 
 bool HiddenPair(Sudoku &sudoku)
 {
+    Log(Trace, "searching for hidden pairs\n");
     return HiddenSetWithOrder(sudoku, 2);
 }
 
 bool HiddenTriple(Sudoku &sudoku)
 {
+    Log(Trace, "searching for hidden triples\n");
     return HiddenSetWithOrder(sudoku, 3);
 }
 
 bool HiddenQuad(Sudoku &sudoku)
 {
+    Log(Trace, "searching for hidden quads\n");
     return HiddenSetWithOrder(sudoku, 4);
 }
 
@@ -91,7 +97,6 @@ namespace {
 
 bool NakedSetWithOrder(Sudoku &sudoku, Index_t order)
 {
-    Log(Trace, "searching for naked sets\n");
     PairList set, changed; // used only for logging
     for (Index_t i = 0; i < 9; ++i) {
         House house = sudoku.GetRow(i);
