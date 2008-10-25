@@ -92,10 +92,6 @@ bool MedusaColor(Sudoku &sudoku)
     Log(Trace, "searching for 3d medusa color eliminations\n");
 
     ColorContainer colors = BuildMedusaColors(sudoku);
-    /*
-    sudoku.Output(std::cout);
-    PrintColorContainer(colors.get<0>());
-    */
     return MedusaColorEliminations(sudoku, colors);
 }
 
@@ -265,18 +261,17 @@ void PrintColorContainer(const PositionView &posView)
 
 bool MedusaColorEliminations(Sudoku &sudoku, const ColorContainer &colors)
 {
-    bool ret = false;
     if (EliminateCandidatesThatSeeConjugates(sudoku, colors.get<0>()))
-        ret = true;
+        return true;
     if (EliminateColorsThatSeeThemselves(sudoku, colors.get<1>()))
-        ret = true;
+        return true;
     //EliminateColorThatSeesAllCellsInHouse
     //EliminateColorThatSeesAllCandidatesInCell
     if (EliminateColorsThatSeeConjugates(sudoku, colors))
-        ret = true;
+        return true;
     if (EliminateCandidatesThatSeeColorWing(sudoku, colors))
-        ret = true;
-    return ret;
+        return true;
+    return false;
 }
 
 bool EliminateCandidatesThatSeeConjugates(Sudoku &sudoku,

@@ -176,25 +176,23 @@ void PrintColorMap(const ColorMap &colors, Index_t value)
 bool SimpleColorEliminations(Sudoku &sudoku, const ColorMap &colors,
         Index_t value)
 {
-    bool ret = false;
     if (EliminateCellsWhichSeeBothConjugates(sudoku, colors, value))
-        ret = true;
+        return true;
     if (EliminateColorSeesItself(sudoku, colors, value))
-        ret = true;
+        return true;
     if (EliminateColorSeesAllCellsInHouse(sudoku, colors, value))
-        ret = true;
-    return ret;
+        return true;
+    return false;
 }
 
 bool MultiColorEliminations(Sudoku &sudoku, const ColorMap &colors,
         Index_t value)
 {
-    bool ret = false;
     if (EliminateColorSeesConjugateColor(sudoku, colors, value))
-        ret = true;
+        return true;
     if (EliminateCellsWhichSeeColorWing(sudoku, colors, value))
-        ret = true;
-    return ret;
+        return true;
+    return false;
 }
 
 bool EliminateCellsWhichSeeBothConjugates(Sudoku &sudoku,
