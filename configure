@@ -3109,7 +3109,7 @@ else
 fi
 
 # todo - check for boost installed
-ac_config_files="$ac_config_files Makefile src/Makefile puzzles/Makefile src/test/Makefile src/techniques/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile puzzles/Makefile src/test/Makefile src/techniques/Makefile src/boost/Makefile src/boost/algorithm/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3709,6 +3709,8 @@ do
     "puzzles/Makefile") CONFIG_FILES="$CONFIG_FILES puzzles/Makefile" ;;
     "src/test/Makefile") CONFIG_FILES="$CONFIG_FILES src/test/Makefile" ;;
     "src/techniques/Makefile") CONFIG_FILES="$CONFIG_FILES src/techniques/Makefile" ;;
+    "src/boost/Makefile") CONFIG_FILES="$CONFIG_FILES src/boost/Makefile" ;;
+    "src/boost/algorithm/Makefile") CONFIG_FILES="$CONFIG_FILES src/boost/algorithm/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

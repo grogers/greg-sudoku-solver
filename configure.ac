@@ -5,4 +5,4 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 # todo - check for boost installed
 AC_OUTPUT(Makefile src/Makefile puzzles/Makefile src/test/Makefile
-          src/techniques/Makefile)
+          src/techniques/Makefile src/boost/Makefile src/boost/algorithm/Makefile)

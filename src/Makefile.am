@@ -1,4 +1,4 @@
-SUBDIRS = test techniques
+SUBDIRS = test techniques boost
 
 SOURCES = Logging.cpp Sudoku.cpp Cell.cpp \
 	Sudoku.hpp Index.hpp Cell.hpp Logging.hpp Techniques.hpp DefineGroup.hpp
