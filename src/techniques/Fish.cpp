@@ -1,10 +1,10 @@
 #include "Sudoku.hpp"
 #include "Logging.hpp"
-#include "LockedSet.hpp"
 
 #include <sstream>
 #include <set>
 #include <iostream>
+#include <boost/algorithm/combination.hpp>
 
 namespace {
 const char *FishSize(Index_t);
@@ -13,53 +13,53 @@ bool FrankenFishForValue(Sudoku &, Index_t value);
 bool MutantFishForValue(Sudoku &, Index_t value);
 enum HouseType { ROW, COL, BOX };
 enum FishShape { BASIC, FRANKEN, MUTANT };
-bool SectorsNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
-bool SectorNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
+bool SectorsNotBasicFish(const std::vector<std::pair<HouseType, Index_t> > &,
+        const std::vector<std::pair<HouseType, Index_t> > &, Index_t);
+bool SectorNotBasicFish(const std::vector<std::pair<HouseType, Index_t> > &, Index_t);
 bool FishWithIndices(Sudoku &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &,
+        const std::vector<std::pair<HouseType, Index_t> > &,
+        const std::vector<std::pair<HouseType, Index_t> > &,
         Index_t, Index_t, FishShape);
-bool SectorsNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
-bool SectorNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
-bool SectorsNotMutantFish(const boost::array<std::pair<HouseType, Index_t>, 6> &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
+bool SectorsNotFrankenFish(const std::vector<std::pair<HouseType, Index_t> > &,
+        const std::vector<std::pair<HouseType, Index_t> > &, Index_t);
+bool SectorNotFrankenFish(const std::vector<std::pair<HouseType, Index_t> > &, Index_t);
+bool SectorsNotMutantFish(const std::vector<std::pair<HouseType, Index_t> > &,
+        const std::vector<std::pair<HouseType, Index_t> > &, Index_t);
 bool FrankenFishWithIndices(Sudoku &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &,
+        const std::vector<std::pair<HouseType, Index_t> > &,
+        const std::vector<std::pair<HouseType, Index_t> > &,
         Index_t, Index_t);
 std::vector<std::pair<HouseType, Index_t> > PossibleRowColSectors(const Sudoku &, Index_t);
 std::vector<std::pair<HouseType, Index_t> > AllPossibleSectors(const Sudoku &, Index_t);
 bool IsHouseOpenOnValue(const House &house, Index_t value);
 bool IsCellInHouse(Index_t, Index_t, HouseType, Index_t);
 int Vertixness(Index_t row, Index_t col,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order);
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover, Index_t order);
 std::set<std::pair<Index_t, Index_t> > BuildListOfFins(const Sudoku &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order);
 bool MakeEliminations(Sudoku &sudoku,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order,
         const std::set<std::pair<Index_t, Index_t> > &fins, FishShape);
 void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order,
         const std::set<std::pair<Index_t, Index_t> > &fins, FishShape shape);
 void OutputSectors(std::ostringstream &,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &, Index_t);
+        const std::vector<std::pair<HouseType, Index_t> > &, Index_t);
 bool CellSeesAllFins(Index_t row, Index_t col,
         const std::set<std::pair<Index_t, Index_t> > &fins);
 bool AllSectorsIntersectEachOther(
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t order);
 bool SectorsIntersectHouse(
-        const boost::array<std::pair<HouseType, Index_t>, 6> &sectors,
+        const std::vector<std::pair<HouseType, Index_t> > &sectors,
         const std::pair<HouseType, Index_t> &house,
         Index_t order);
 bool HousesIntersect(const std::pair<HouseType, Index_t> &house1,
@@ -100,36 +100,21 @@ namespace {
 
 bool BasicFishForValue(Sudoku &sudoku, Index_t value)
 {
-    const std::vector<std::pair<HouseType, Index_t> > possSectors =
-        PossibleRowColSectors(sudoku, value);
+    std::vector<std::pair<HouseType, Index_t> >
+        base = PossibleRowColSectors(sudoku, value),
+        cover = base;
 
     // find all exemplars (x-wing to whale)
-    Index_t max = possSectors.size()/2;
+    Index_t max = base.size()/2;
     if (max >= 1)
         --max;
     max = std::min<Index_t>(max, 6);
     for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> baseSectorIndex(order);
-        for (Index_t i = 0; i < order; ++i)
-            baseSectorIndex[i] = i;
-
         do {
-            boost::array<std::pair<HouseType, Index_t>, 6> base;
-            for (Index_t i = 0; i < order; ++i)
-                 base[i] = possSectors[baseSectorIndex[i]];
-
             if (SectorNotBasicFish(base, order))
                 continue;
 
-            std::vector<Index_t> coverSectorIndex(order);
-            for (Index_t i = 0; i < order; ++i)
-                coverSectorIndex[i] = i;
-
             do {
-                boost::array<std::pair<HouseType, Index_t>, 6> cover;
-                for (Index_t i = 0; i < order; ++i)
-                     cover[i] = possSectors[coverSectorIndex[i]];
-
                 if (SectorNotBasicFish(cover, order))
                     continue;
 
@@ -138,8 +123,11 @@ bool BasicFishForValue(Sudoku &sudoku, Index_t value)
 
                 if (FishWithIndices(sudoku, base, cover, value, order, BASIC))
                     return true;
-            } while (GetNewIndicesToVisit(coverSectorIndex, possSectors.size()));
-        } while (GetNewIndicesToVisit(baseSectorIndex, possSectors.size()));
+            } while (boost::next_combination(cover.begin(),
+                        cover.begin() + order, cover.end()));
+
+        } while (boost::next_combination(base.begin(),
+                    base.begin() + order, base.end()));
     }
 
     return false;
@@ -147,36 +135,21 @@ bool BasicFishForValue(Sudoku &sudoku, Index_t value)
 
 bool FrankenFishForValue(Sudoku &sudoku, Index_t value)
 {
-    const std::vector<std::pair<HouseType, Index_t> > possSectors =
-        AllPossibleSectors(sudoku, value);
+    std::vector<std::pair<HouseType, Index_t> >
+        base = AllPossibleSectors(sudoku, value),
+        cover = base;
 
     // find all exemplars (x-wing to whale)
-    Index_t max = possSectors.size()/3;
+    Index_t max = base.size()/3;
     if (max >= 1)
         --max;
     max = std::min<Index_t>(max, 6);
     for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> baseSectorIndex(order);
-        for (Index_t i = 0; i < order; ++i)
-            baseSectorIndex[i] = i;
-
         do {
-            boost::array<std::pair<HouseType, Index_t>, 6> base;
-            for (Index_t i = 0; i < order; ++i)
-                 base[i] = possSectors[baseSectorIndex[i]];
-
             if (SectorNotFrankenFish(base, order))
                 continue;
 
-            std::vector<Index_t> coverSectorIndex(order);
-            for (Index_t i = 0; i < order; ++i)
-                coverSectorIndex[i] = i;
-
             do {
-                boost::array<std::pair<HouseType, Index_t>, 6> cover;
-                for (Index_t i = 0; i < order; ++i)
-                     cover[i] = possSectors[coverSectorIndex[i]];
-
                 if (SectorNotFrankenFish(cover, order))
                     continue;
 
@@ -185,8 +158,11 @@ bool FrankenFishForValue(Sudoku &sudoku, Index_t value)
 
                 if (FishWithIndices(sudoku, base, cover, value, order, FRANKEN))
                     return true;
-            } while (GetNewIndicesToVisit(coverSectorIndex, possSectors.size()));
-        } while (GetNewIndicesToVisit(baseSectorIndex, possSectors.size()));
+            } while (boost::next_combination(cover.begin(),
+                        cover.begin() + order, cover.end()));
+
+        } while (boost::next_combination(base.begin(),
+                    base.begin() + order, base.end()));
     }
 
     return false;
@@ -194,46 +170,34 @@ bool FrankenFishForValue(Sudoku &sudoku, Index_t value)
 
 bool MutantFishForValue(Sudoku &sudoku, Index_t value)
 {
-    const std::vector<std::pair<HouseType, Index_t> > possSectors =
-        AllPossibleSectors(sudoku, value);
+    std::vector<std::pair<HouseType, Index_t> >
+        base = AllPossibleSectors(sudoku, value),
+        cover = base;
 
     // find all exemplars (x-wing to whale)
-    Index_t max = possSectors.size()/3;
+    Index_t max = base.size()/3;
     if (max >= 1)
         --max;
     max = std::min<Index_t>(max, 6);
     for (Index_t order = 2; order <= max; ++order) {
-        std::vector<Index_t> baseSectorIndex(order);
-        for (Index_t i = 0; i < order; ++i)
-            baseSectorIndex[i] = i;
-
         do {
-            boost::array<std::pair<HouseType, Index_t>, 6> base;
-            for (Index_t i = 0; i < order; ++i)
-                 base[i] = possSectors[baseSectorIndex[i]];
-
-            std::vector<Index_t> coverSectorIndex(order);
-            for (Index_t i = 0; i < order; ++i)
-                coverSectorIndex[i] = i;
-
             do {
-                boost::array<std::pair<HouseType, Index_t>, 6> cover;
-                for (Index_t i = 0; i < order; ++i)
-                     cover[i] = possSectors[coverSectorIndex[i]];
-
                 if (SectorsNotMutantFish(base, cover, order))
                     continue;
 
                 if (FishWithIndices(sudoku, base, cover, value, order, MUTANT))
                     return true;
-            } while (GetNewIndicesToVisit(coverSectorIndex, possSectors.size()));
-        } while (GetNewIndicesToVisit(baseSectorIndex, possSectors.size()));
+            } while (boost::next_combination(cover.begin(),
+                        cover.begin() + order, cover.end()));
+        } while (boost::next_combination(base.begin(),
+                    base.begin() + order, base.end()));
+
     }
 
     return false;
 }
 
-bool SectorNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &sector, Index_t order)
+bool SectorNotBasicFish(const std::vector<std::pair<HouseType, Index_t> > &sector, Index_t order)
 {
     for (Index_t i = 1; i < order; ++i) {
         if (sector[i].first != sector[0].first)
@@ -242,8 +206,8 @@ bool SectorNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &se
     return false;
 }
 
-bool SectorsNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order)
+bool SectorsNotBasicFish(const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover, Index_t order)
 {
     // base must be different than the cover, ie one is rows, one is columns
     if (base[0].first == cover[0].first)
@@ -252,7 +216,7 @@ bool SectorsNotBasicFish(const boost::array<std::pair<HouseType, Index_t>, 6> &b
         return false;
 }
 
-bool SectorNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> &sector, Index_t order)
+bool SectorNotFrankenFish(const std::vector<std::pair<HouseType, Index_t> > &sector, Index_t order)
 {
     // franken fish are row + boxes by cols + boxes or vv.
     HouseType lineType = static_cast<HouseType>(-1);
@@ -271,8 +235,8 @@ bool SectorNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> &
     return false;
 }
 
-bool SectorsNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order)
+bool SectorsNotFrankenFish(const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover, Index_t order)
 {
     // franken fish are row + boxes by cols + boxes or vv.
     HouseType lineType = static_cast<HouseType>(-1);
@@ -294,8 +258,8 @@ bool SectorsNotFrankenFish(const boost::array<std::pair<HouseType, Index_t>, 6> 
     return !AllSectorsIntersectEachOther(base, cover, order);
 }
 
-bool SectorsNotMutantFish(const boost::array<std::pair<HouseType, Index_t>, 6> & base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order)
+bool SectorsNotMutantFish(const std::vector<std::pair<HouseType, Index_t> > & base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover, Index_t order)
 {
     for (Index_t i = 0; i < order; ++i) {
         for (Index_t j = 0; j < order; ++j) {
@@ -370,8 +334,8 @@ bool IsCellInHouse(Index_t row, Index_t col, HouseType type, Index_t idx)
  * If this value is zero, a candidate may exist there but doesn't have to.
  */
 int Vertixness(Index_t row, Index_t col,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover, Index_t order)
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover, Index_t order)
 {
     int ret = 0;
     for (Index_t i = 0; i < order; ++i) {
@@ -382,8 +346,8 @@ int Vertixness(Index_t row, Index_t col,
 }
 
 std::set<std::pair<Index_t, Index_t> > BuildListOfFins(const Sudoku &sudoku,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order)
 {
     std::set<std::pair<Index_t, Index_t> > ret;
@@ -423,8 +387,8 @@ std::set<std::pair<Index_t, Index_t> > BuildListOfFins(const Sudoku &sudoku,
 }
 
 bool FishWithIndices(Sudoku &sudoku,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order, FishShape shape)
 {
     std::set<std::pair<Index_t, Index_t> > fins =
@@ -433,8 +397,8 @@ bool FishWithIndices(Sudoku &sudoku,
 }
 
 bool MakeEliminations(Sudoku &sudoku,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order, const std::set<std::pair<Index_t, Index_t> > &fins,
         FishShape shape)
 {
@@ -495,8 +459,8 @@ bool MakeEliminations(Sudoku &sudoku,
 }
 
 void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &changed,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t value, Index_t order,
         const std::set<std::pair<Index_t, Index_t> > &fins, FishShape shape)
 {
@@ -547,7 +511,7 @@ void LogChanges(const std::vector<std::pair<Index_t, Index_t> > &changed,
 }
 
 void OutputSectors(std::ostringstream &sstr,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &sectors,
+        const std::vector<std::pair<HouseType, Index_t> > &sectors,
         Index_t order)
 {
     HouseType curr = static_cast<HouseType>(-1);
@@ -600,8 +564,8 @@ const char *FishSize(Index_t order)
  * Checks whether all sectors in the base intersect a sector of the cover and vv.
  */
 bool AllSectorsIntersectEachOther(
-        const boost::array<std::pair<HouseType, Index_t>, 6> &base,
-        const boost::array<std::pair<HouseType, Index_t>, 6> &cover,
+        const std::vector<std::pair<HouseType, Index_t> > &base,
+        const std::vector<std::pair<HouseType, Index_t> > &cover,
         Index_t order)
 {
     for (Index_t i = 0; i < order; ++i) {
@@ -614,7 +578,7 @@ bool AllSectorsIntersectEachOther(
 }
 
 bool SectorsIntersectHouse(
-        const boost::array<std::pair<HouseType, Index_t>, 6> &sectors,
+        const std::vector<std::pair<HouseType, Index_t> > &sectors,
         const std::pair<HouseType, Index_t> &house,
         Index_t order)
 {

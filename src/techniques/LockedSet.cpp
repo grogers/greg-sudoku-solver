@@ -4,6 +4,7 @@
 
 #include <utility>
 #include <sstream>
+#include <boost/algorithm/combination.hpp>
 
 namespace {
 // pair is (index, value)
@@ -12,16 +13,18 @@ bool NakedSetWithOrder(Sudoku &, Index_t);
 bool NakedSetInHouse(House &, PairList &set, PairList &changed, Index_t order);
 std::vector<Index_t> IndicesOfPossibleNakedSet(const House &, Index_t order);
 Index_t MaxSizeOfSetInHouse(const House &);
-bool NakedSetInHouseWithIndices(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
+bool NakedSetInHouseWithIndices(House &, const std::vector<Index_t> &, Index_t,
+        PairList &set, PairList &changed);
 
 bool HiddenSetWithOrder(Sudoku &, Index_t);
 bool HiddenSetInHouse(House &, PairList &set, PairList &changed, Index_t order);
 std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &, Index_t order);
-bool HiddenSetInHouseWithValues(House &, const boost::array<Index_t, 4> &, Index_t, PairList &set, PairList &changed);
+bool HiddenSetInHouseWithValues(House &, const std::vector<Index_t> &, Index_t,
+        PairList &set, PairList &changed);
 
-void LogChangesForRow(Index_t row, const PairList &set, const PairList &changed, const char *setType);
-void LogChangesForCol(Index_t col, const PairList &set, const PairList &changed, const char *setType);
-void LogChangesForBox(Index_t box, const PairList &set, const PairList &changed, const char *setType);
+void LogChangesForRow(Index_t, const PairList &, const PairList &, const char *);
+void LogChangesForCol(Index_t, const PairList &, const PairList &, const char *);
+void LogChangesForBox(Index_t, const PairList &, const PairList &, const char *);
 const char *OrderToString(Index_t);
 }
 
@@ -59,28 +62,6 @@ bool HiddenQuad(Sudoku &sudoku)
 {
     Log(Trace, "searching for hidden quads\n");
     return HiddenSetWithOrder(sudoku, 4);
-}
-
-
-bool GetNewIndicesToVisit(std::vector<Index_t> &indices, Index_t n)
-{
-    const Index_t order = indices.size();
-    for (Index_t i = order - 1; ; --i) {
-        if (indices[i] < n - order + i) {
-            ++indices[i];
-            return true;
-        }
-
-        if (i == 0)
-            return false;
-
-        if (indices[i] > indices[i-1] + 1) {
-            ++indices[i-1];
-            for (Index_t j = i; j < order; ++j)
-                indices[j] = indices[j-1] + 1;
-            return true;
-        }
-    }
 }
 
 Index_t NumTimesValueOpenInHouse(const House &house, Index_t value)
@@ -183,7 +164,8 @@ std::vector<Index_t> ValuesOfPossibleHiddenSet(const House &house, Index_t order
     return ret;
 }
 
-bool NakedSetInHouse(House &house, PairList &set, PairList &changed, Index_t order)
+bool NakedSetInHouse(House &house, PairList &set, PairList &changed,
+        Index_t order)
 {
     if (MaxSizeOfSetInHouse(house) < order)
         return false;
@@ -192,18 +174,11 @@ bool NakedSetInHouse(House &house, PairList &set, PairList &changed, Index_t ord
     if (indices.size() < order)
         return false;
 
-    std::vector<Index_t> indicesToVisit(order);
-    for (Index_t i = 0; i < order; ++i)
-        indicesToVisit[i] = i;
-
     do {
-        boost::array<Index_t, 4> indexIntoHouse;
-        for (Index_t i = 0; i < order; ++i)
-            indexIntoHouse[i] = indices[indicesToVisit[i]];
-
-        if (NakedSetInHouseWithIndices(house, indexIntoHouse, order, set, changed))
+        if (NakedSetInHouseWithIndices(house, indices, order, set, changed))
             return true;
-    } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
+    } while (boost::next_combination(indices.begin(),
+                indices.begin() + order, indices.end()));
 
     return false;
 }
@@ -212,7 +187,8 @@ bool NakedSetInHouse(House &house, PairList &set, PairList &changed, Index_t ord
  * If the number of candidates in the cells of the house pointed at by
  * index are equal to order (size of index), then it is a naked set.
  */
-bool NakedSetInHouseWithIndices(House &house, const boost::array<Index_t, 4> &index, Index_t order, PairList &set, PairList &changed)
+bool NakedSetInHouseWithIndices(House &house, const std::vector<Index_t> &index,
+        Index_t order, PairList &set, PairList &changed)
 {
     bool ret = false;
     boost::array<Index_t, 4> candidates = {{ 0 }}; // order can't be greater than 4
@@ -257,7 +233,8 @@ bool NakedSetInHouseWithIndices(House &house, const boost::array<Index_t, 4> &in
     return ret;
 }
 
-bool HiddenSetInHouse(House &house, PairList &set, PairList &changed, Index_t order)
+bool HiddenSetInHouse(House &house, PairList &set, PairList &changed,
+        Index_t order)
 {
     if (MaxSizeOfSetInHouse(house) < order)
         return false;
@@ -266,26 +243,18 @@ bool HiddenSetInHouse(House &house, PairList &set, PairList &changed, Index_t or
     if (values.size() < order)
         return false;
 
-    std::vector<Index_t> valuesToVisit(order);
-    for (Index_t i = 0; i < order; ++i)
-        valuesToVisit[i] = i;
-
     do {
-        boost::array<Index_t, 4> valuesInSet;
-        for (Index_t i = 0; i < order; ++i)
-            valuesInSet[i] = values[valuesToVisit[i]];
-
-        if (HiddenSetInHouseWithValues(house, valuesInSet, order, set, changed))
+        if (HiddenSetInHouseWithValues(house, values, order, set, changed))
             return true;
-    } while (GetNewIndicesToVisit(valuesToVisit, values.size()));
+    } while (boost::next_combination(values.begin(),
+                values.begin() + order, values.end()));
 
     return false;
 }
 
-/**
- *
- */
-bool HiddenSetInHouseWithValues(House &house, const boost::array<Index_t, 4> &values, Index_t order, PairList &set, PairList &changed)
+bool HiddenSetInHouseWithValues(House &house,
+        const std::vector<Index_t> &values, Index_t order, PairList &set,
+        PairList &changed)
 {
     bool ret = false;
     boost::array<Index_t, 4> indices = {{ 0 }}; // order can't be greater than 4

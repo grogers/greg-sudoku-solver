@@ -282,7 +282,7 @@ void usage()
        "        n1, n2, n3, n4      naked single, pair, triple, quad\n"
        "        h1, h2, h3, h4      hidden single, pair, triple, quad\n"
        "        lc                  locked candidates in line/box intersections\n"
-       "        bf2, bf3, bf3       x-wing, swordfish, jellyfish (\"basic fish\")\n\n"
+       "        bf2, bf3, bf4       x-wing, swordfish, jellyfish (\"basic fish\")\n\n"
        "        xyw                 xy-wing\n"
        "        sc                  simple colors\n"
        "        mc                  multi colors\n"

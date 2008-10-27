@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include <boost/tuple/tuple.hpp>
+#include <boost/algorithm/combination.hpp>
 
 namespace {
 typedef boost::tuple<Index_t, Index_t, Index_t> RowColVal;
@@ -14,11 +15,11 @@ Index_t MaxSizeOfBasicFish(const Sudoku &, Index_t value);
 std::vector<Index_t> IndicesOfPossibleRowBaseBasicFish(const Sudoku &, Index_t, Index_t);
 std::vector<Index_t> IndicesOfPossibleColBaseBasicFish(const Sudoku &, Index_t, Index_t);
 bool RowBaseBasicFish(Sudoku &, Index_t val, Index_t order);
-bool RowBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
+bool RowBaseBasicFishWithIndices(Sudoku &, Index_t val, std::vector<Index_t> &indices, Index_t order);
 bool ColBaseBasicFish(Sudoku &, Index_t val, Index_t order);
-bool ColBaseBasicFishWithIndices(Sudoku &, Index_t val, boost::array<Index_t, 4> &indices, Index_t order);
-void LogBasicFish(bool rowBase, const boost::array<Index_t, 4> &rows,
-        const boost::array<Index_t, 4> &cols,
+bool ColBaseBasicFishWithIndices(Sudoku &, Index_t val, std::vector<Index_t> &indices, Index_t order);
+void LogBasicFish(bool rowBase, const std::vector<Index_t> &rows,
+        const std::vector<Index_t> &cols,
         const std::vector<RowColVal> &changed,
         Index_t value, Index_t order);
 const char *OrderToString(Index_t order);
@@ -101,23 +102,17 @@ bool RowBaseBasicFish(Sudoku &sudoku, Index_t value, Index_t order)
     if (indices.size() < order)
         return false;
 
-    std::vector<Index_t> indicesToVisit(order);
-    for (Index_t i = 0; i < order; ++i)
-        indicesToVisit[i] = i;
-
     do {
-        boost::array<Index_t, 4> rowIndices;
-        for (Index_t i = 0; i < order; ++i)
-            rowIndices[i] = indices[indicesToVisit[i]];
-
-        if (RowBaseBasicFishWithIndices(sudoku, value, rowIndices, order))
+        if (RowBaseBasicFishWithIndices(sudoku, value, indices, order))
             return true;
-    } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
+    } while (boost::next_combination(indices.begin(),
+                indices.begin() + order, indices.end()));
+
 
     return false;
 }
 
-bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index_t, 4> &rowIndices, Index_t order)
+bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, std::vector<Index_t> &rowIndices, Index_t order)
 {
     bool ret = false;
     boost::array<Index_t, 4> colIndices = {{ 0 }};
@@ -152,8 +147,10 @@ bool RowBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
             }
         }
 
-        if (ret)
-            LogBasicFish(true, rowIndices, colIndices, changed, val, order);
+        if (ret) {
+            std::vector<Index_t> tmp(colIndices.begin(), colIndices.end());
+            LogBasicFish(true, rowIndices, tmp, changed, val, order);
+        }
     }
     return ret;
 }
@@ -168,23 +165,16 @@ bool ColBaseBasicFish(Sudoku &sudoku, Index_t value, Index_t order)
     if (indices.size() < order)
         return false;
 
-    std::vector<Index_t> indicesToVisit(order);
-    for (Index_t i = 0; i < order; ++i)
-        indicesToVisit[i] = i;
-
     do {
-        boost::array<Index_t, 4> colIndices;
-        for (Index_t i = 0; i < order; ++i)
-            colIndices[i] = indices[indicesToVisit[i]];
-
-        if (ColBaseBasicFishWithIndices(sudoku, value, colIndices, order))
+        if (ColBaseBasicFishWithIndices(sudoku, value, indices, order))
             return true;
-    } while (GetNewIndicesToVisit(indicesToVisit, indices.size()));
+    } while (boost::next_combination(indices.begin(),
+                indices.begin() + order, indices.end()));
 
     return false;
 }
 
-bool ColBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index_t, 4> &colIndices, Index_t order)
+bool ColBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, std::vector<Index_t> &colIndices, Index_t order)
 {
     bool ret = false;
     boost::array<Index_t, 4> rowIndices = {{ 0 }};
@@ -219,14 +209,16 @@ bool ColBaseBasicFishWithIndices(Sudoku &sudoku, Index_t val, boost::array<Index
             }
         }
 
-        if (ret)
-            LogBasicFish(false, rowIndices, colIndices, changed, val, order);
+        if (ret) {
+            std::vector<Index_t> tmp(rowIndices.begin(), rowIndices.end());
+            LogBasicFish(false, tmp, colIndices, changed, val, order);
+        }
     }
     return ret;
 }
 
-void LogBasicFish(bool rowBase, const boost::array<Index_t, 4> &rows,
-        const boost::array<Index_t, 4> &cols,
+void LogBasicFish(bool rowBase, const std::vector<Index_t> &rows,
+        const std::vector<Index_t> &cols,
         const std::vector<RowColVal> &changed,
         Index_t value, Index_t order)
 {
